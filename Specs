@@ -1,0 +1,29 @@
+Cool 3D World
+
+Name(s) of participant(s)
+Raluca Miclea, ralmi882@student.liu.se
+Renaud Costa, renco075@student.liu.se
+Maximilian Galanis, maxga890@student.liu.se
+Dominique Dion, domdi257@student.liu.se
+
+Short description
+We will write a 3D world which you can explore in first-person view (and maybe interact with some parts of it).
+
+Will-do features
+Gravity (the camera needs to stick to the floor)
+Textured objects, floor, etc
+Skybox
+Jump animation
+Small and simple particle effects when visiting a checkpoint
+Simple collision detection (and prevention) with the objects from the world
+Simple HUD & mini map 
+Goal of the game: Visit every checkpoint! -> surprise when all checkpoints have been visited
+
+Might-do features
+Sound
+Environmental mapping
+Objects reacting to the presence of the “explorer” (they move or explode or change their shape, make a sound etc)
+Fire
+Rain
+The “explorer” being able to fly into the world
+
