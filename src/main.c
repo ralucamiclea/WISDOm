@@ -25,7 +25,7 @@ float angle; //angle of rotation for the camera direction
 float horizontalAngle;
 float verticalAngle;
 
-mat4 frustum_matrix, camera_placement, rotation, translation, scaling;
+mat4 frustum_matrix, camera_placement, rotation, translation, scaling, move_skybox;
 Model *dog, *ground, *skybox;
 GLuint grass_tex, skybox_tex, dog_tex;
 
@@ -81,13 +81,16 @@ void init(void)
 
 void display(void)
 {
+	
+		// clear the screen
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
 		t = (GLfloat)glutGet(GLUT_ELAPSED_TIME);
 
 		frustum_matrix = frustum(left, right, bottom, top, near, far);
-		camera_placement = lookAt(eyeX, eyeY, eyeZ, eyeX + lookAtX, eyeY + lookAtY, eyeZ + lookAtZ, 0, 1, 0);
-		//camera_placement = lookAt(eyeX, eyeY, eyeX, eyeX + lookAtX, eyeY + lookAtY, eyeX + lookAtZ, 0, 1, 0);
-		//camera_placement = lookAt(eyeX, eyeY, eyeX, eyeX + cos(verticalAngle)*sin(horizontalAngle), sin(verticalAngle), eyeX + cos(verticalAngle)*cos(horizontalAngle), 0, 1, 0);
-
+		camera_placement = lookAt(eyeX, eyeY, eyeZ, eyeX + lookAtX, eyeY, eyeZ + lookAtZ, 0, 1, 0);
+		move_skybox = T(eyeX, eyeY-0.2f, eyeZ);
+		
 		//skybox
 		glUseProgram(skybox_program);
 		glDisable(GL_DEPTH_TEST);
@@ -95,17 +98,18 @@ void display(void)
 		printError("skybox");
 		glUniformMatrix4fv(glGetUniformLocation(skybox_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 		glUniformMatrix4fv(glGetUniformLocation(skybox_program, "camera"), 1, GL_TRUE, camera_placement.m);
+		glUniformMatrix4fv(glGetUniformLocation(skybox_program, "move_skybox"), 1, GL_TRUE, move_skybox.m);
 		glUniform1i(glGetUniformLocation(skybox_program, "texUnit"), 0);
 		DrawModel(skybox, skybox_program, "in_Position", 0L, "inTexCoord");
 
-		glUseProgram(program);
 		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
+
+		glUseProgram(program);
 		rotation = Ry(45);
 		translation = T(0,0,0);
 		scaling = S(3,3,3);
-
-		// clear the screen
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUniformMatrix4fv(glGetUniformLocation(program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 		glUniformMatrix4fv(glGetUniformLocation(program, "camera"), 1, GL_TRUE, camera_placement.m);
@@ -131,43 +135,38 @@ void display(void)
 
 void OnTimer(int value)
 {
-		glutPostRedisplay();
 		glutTimerFunc(20, &OnTimer, value);
+		glutPostRedisplay();
 
 		if (glutKeyIsDown('w')){ //move camera forward
-		  eyeX += lookAtX * 0.1f;
-		  eyeZ += lookAtZ * 0.1f;
+			eyeX += lookAtX * 0.1f;
+			eyeZ += lookAtZ * 0.1f;
 		}
 
 		if (glutKeyIsDown('s')){ //move camera backwards
-		  eyeX -= lookAtX * 0.1f;
-		  eyeZ -= lookAtZ * 0.1f;
-		}
-
-		if (glutKeyIsDown('r')){ //move camera up
-			angle -= 0.01f;
-			eyeY += lookAtY * 0.1f;
-			lookAtY = -cos(angle);
-		}
-
-		if (glutKeyIsDown('f')){ //move camera down
-			angle += 0.01f;
-			eyeY -= lookAtY * 0.1f;
-			lookAtY = -cos(angle);
+			eyeX -= lookAtX * 0.1f;
+			eyeZ -= lookAtZ * 0.1f;
 		}
 
 		if (glutKeyIsDown('a')){ //rotate camera left around Y axis
-		  angle -= 0.01f;
-		  lookAtX = sin(angle);
-		  lookAtZ = -cos(angle);
+			angle -= 0.05f;
+			lookAtX = sin(angle);
+			lookAtZ = -cos(angle);
 		}
 
 		if (glutKeyIsDown('d')){ //rotate camera right around Y axis
-		  angle += 0.01f;
-		  lookAtX = sin(angle);
-		  lookAtZ = -cos(angle);
+			angle += 0.05f;
+			lookAtX = sin(angle);
+			lookAtZ = -cos(angle);
 		}
 
+		if (glutKeyIsDown(32)){ // up
+			eyeY += 0.1f;
+		}
+
+		if (glutKeyIsDown('c')){ // down
+			eyeY -= 0.1f;
+		}
 }
 
 /*
