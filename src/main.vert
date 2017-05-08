@@ -22,9 +22,9 @@ void main() {
 	int row = gl_InstanceID / edge;
 	vec4 offs = vec4(gl_InstanceID % edge, gl_InstanceID / edge, 0, 0);
 
-	gl_Position = frustum * camera  * rotation * scaling * translation *  vec4(in_Position, 1.0) + offs * 2.0;;
+	gl_Position = frustum * camera  * translation * rotation * scaling *  vec4(in_Position, 1.0) + offs * 5.0;;
 
 	// Model to View
-	//gl_Position = frustum * camera  * rotation * scaling * translation * vec4(in_Position, 1.0);
+	//gl_Position = frustum * camera  * translation * rotation * scaling * vec4(in_Position, 1.0);
 	//gl_Position = frustum * camera  * rotation * translation * vec4(in_Position, 1.0);
 	}
