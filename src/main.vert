@@ -11,14 +11,20 @@ uniform mat4 rotation;
 uniform mat4 camera;
 uniform mat4 frustum;
 
-
+uniform int edge;
+uniform int count;
 
 void main() {
 
-  // Texture
-  exTexCoord = inTexCoord;
+	// Texture
+	exTexCoord = inTexCoord;
 
-  // Model to View
-  gl_Position = frustum * camera  * rotation * scaling * translation * vec4(in_Position, 1.0);
-  //gl_Position = frustum * camera  * rotation * translation * vec4(in_Position, 1.0);
-}
+	int row = gl_InstanceID / edge;
+	vec4 offs = vec4(gl_InstanceID % edge, gl_InstanceID / edge, 0, 0);
+
+	gl_Position = frustum * camera  * rotation * scaling * translation *  vec4(in_Position, 1.0) + offs * 2.0;;
+
+	// Model to View
+	//gl_Position = frustum * camera  * rotation * scaling * translation * vec4(in_Position, 1.0);
+	//gl_Position = frustum * camera  * rotation * translation * vec4(in_Position, 1.0);
+	}
