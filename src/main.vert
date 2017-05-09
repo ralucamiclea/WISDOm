@@ -13,6 +13,7 @@ uniform mat4 frustum;
 
 uniform int edge;
 uniform int count;
+uniform int distance;
 
 void main() {
 
@@ -22,7 +23,7 @@ void main() {
 	int row = gl_InstanceID / edge;
 	vec4 offs = vec4(gl_InstanceID % edge, gl_InstanceID / edge, 0, 0);
 
-	gl_Position = frustum * camera  * translation * rotation * scaling *  vec4(in_Position, 1.0) + offs * 5.0;;
+	gl_Position = frustum * camera  * translation * rotation * scaling *  vec4(in_Position, 1.0) + offs * distance;
 
 	// Model to View
 	//gl_Position = frustum * camera  * translation * rotation * scaling * vec4(in_Position, 1.0);

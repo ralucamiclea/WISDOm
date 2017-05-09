@@ -10,8 +10,8 @@
 #include "../common/VectorUtils3.h"
 #include <math.h>
 
-#define HEIGHT 600
-#define WIDTH 600
+#define HEIGHT 1000
+#define WIDTH 1000
 
 
 
@@ -26,8 +26,9 @@ float verticalAngle = 0.0;
 
 vec3 posObj; //position of the moving cube
 mat4 frustum_matrix, camera_placement, rotation, translation, scaling, camera_skybox;
-Model *dog, *terrain, *skybox, *octagon;
-GLuint grass_tex, skybox_tex, dog_tex;
+Model *dog, *terrain, *skybox, *octagon, *tree;
+GLuint grass_tex, skybox_tex, dog_tex, tree_tex;
+GLuint skyboxup_tex,skyboxdn_tex, skyboxlf_tex, skyboxrt_tex, skyboxbk_tex, skyboxft_tex;
 TextureData terrain_tex;
 
 GLuint program, skybox_program, terrain_program; // Reference to shader program
@@ -205,14 +206,23 @@ void init(void)
 	//load textures
 	LoadTGATextureSimple("../tex/grass.tga", &grass_tex);
 	LoadTGATextureSimple("../tex/skybox.tga", &skybox_tex);
+	LoadTGATextureSimple("../tex/niceday2up.tga", &skyboxup_tex);
+	LoadTGATextureSimple("../tex/niceday2dn.tga", &skyboxdn_tex);
+	LoadTGATextureSimple("../tex/niceday2lf.tga", &skyboxlf_tex);
+	LoadTGATextureSimple("../tex/niceday2rt.tga", &skyboxrt_tex);
+	LoadTGATextureSimple("../tex/niceday2ft.tga", &skyboxft_tex);
+	LoadTGATextureSimple("../tex/niceday2bk.tga", &skyboxbk_tex);
 	LoadTGATextureSimple("../tex/dog.tga", &dog_tex);
+	LoadTGATextureSimple("../tex/greenleaves.tga", &tree_tex);
 	LoadTGATextureData("../tex/fft-terrain.tga", &terrain_tex);
 	terrain = GenerateTerrain(&terrain_tex);
 
 	//load objects
 	dog = LoadModelPlus("../obj/dog.obj");
+	//skybox = LoadModelPlus("../obj/skybox1.obj");
 	skybox = LoadModelPlus("../obj/skybox.obj");
 	octagon = LoadModelPlus("../obj/octagon.obj"); //moving cube
+	tree = LoadModelPlus("../obj/nicetree.obj");
 
 	dumpInfo();
 
@@ -234,24 +244,52 @@ void init(void)
 	//skybox texture
 	glUseProgram(skybox_program);
 	glUniformMatrix4fv(glGetUniformLocation(skybox_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
-	glUniform1i(glGetUniformLocation(skybox_program, "texUnit"), 0);
 	
-	//dog texture
-	glUseProgram(program);
-	glUniformMatrix4fv(glGetUniformLocation(program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	glUniform1i(glGetUniformLocation(skybox_program, "texUnit"), 0);
+	/*
+	glUniform1i(glGetUniformLocation(skybox_program, "texUnit1"), 0);
+	glUniform1i(glGetUniformLocation(skybox_program, "texUnit2"), 0);
+	glUniform1i(glGetUniformLocation(skybox_program, "texUnit3"), 0);
+	glUniform1i(glGetUniformLocation(skybox_program, "texUnit4"), 0);
+	glUniform1i(glGetUniformLocation(skybox_program, "texUnit5"), 0);
+	glUniform1i(glGetUniformLocation(skybox_program, "texUnit6"), 0);
+	*/
 	
 	//terrain texture
 	glUseProgram(terrain_program);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 	glUniform1i(glGetUniformLocation(terrain_program, "texUnit"), 0);
 
+	//dog texture
+	glUseProgram(program);
+	glUniformMatrix4fv(glGetUniformLocation(program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+}
+
+//DRAW objects as specified
+void draw(int edge_val, int offset, vec3 pos, int rotangle, GLuint texture, Model *obj, GLuint program){
+	
+	edge = edge_val;
+	int count = 1 * edge;
+	translation = T(pos.x, calculateHeight(terrain, pos), pos.z);
+	rotation = Ry(rotangle);
+	
+	glUniform1i(glGetUniformLocation(program, "edge"), edge);
+	glUniform1i(glGetUniformLocation(program, "count"), count);
+	glUniform1i(glGetUniformLocation(program, "distance"), offset);
+	glUniformMatrix4fv(glGetUniformLocation(program, "scaling"), 1, GL_TRUE, scaling.m);
+	glUniformMatrix4fv(glGetUniformLocation(program, "translation"), 1, GL_TRUE, translation.m);
+	glUniformMatrix4fv(glGetUniformLocation(program, "rotation"), 1, GL_TRUE, rotation.m);
+
+	glBindTexture(GL_TEXTURE_2D, texture);	
+	
+	//instancing
+	DrawModelInstanced(obj, program, "in_Position", 0L, "inTexCoord", count);
 }
 
 void display(void)
 {
-	//for object instancing
-	int count = 1 * edge; 
+	vec3 pos = {0,0,0};
 
 	//set up the camera
 	direction = SetVector(cos(verticalAngle)*sin(horizontalAngle), sin(verticalAngle), cos(verticalAngle)*cos(horizontalAngle));
@@ -285,8 +323,15 @@ void display(void)
 	
 	glUniformMatrix4fv(glGetUniformLocation(skybox_program, "camera"), 1, GL_TRUE, camera_skybox.m);
 	glUniformMatrix4fv(glGetUniformLocation(skybox_program, "translation"), 1, GL_TRUE, translation.m);
-	
 	glBindTexture(GL_TEXTURE_2D, skybox_tex);
+	/*
+	glBindTexture(GL_TEXTURE_2D, skyboxft_tex);
+	glBindTexture(GL_TEXTURE_2D, skyboxbk_tex);
+	glBindTexture(GL_TEXTURE_2D, skyboxup_tex);
+	glBindTexture(GL_TEXTURE_2D, skyboxdn_tex);
+	glBindTexture(GL_TEXTURE_2D, skyboxlf_tex);
+	glBindTexture(GL_TEXTURE_2D, skyboxrt_tex);
+	*/
 	DrawModel(skybox, skybox_program, "in_Position", 0L, "inTexCoord");
 
 	glEnable(GL_DEPTH_TEST);
@@ -304,23 +349,27 @@ void display(void)
 	
 	//draw objects
 	glUseProgram(program);
-	glUniform1i(glGetUniformLocation(program, "edge"), edge);
-	glUniform1i(glGetUniformLocation(program, "count"), count);
 	glUniformMatrix4fv(glGetUniformLocation(program, "camera"), 1, GL_TRUE, camera_placement.m);
 	
 	//dog
-	scaling = S(0.1,0.1,0.1);
-	vec3 dog_position = {100, 0, 100};
-	translation = T(dog_position.x, calculateHeight(terrain, dog_position), dog_position.z);
-	rotation = Ry(45);
-	glUniformMatrix4fv(glGetUniformLocation(program, "scaling"), 1, GL_TRUE, scaling.m);
-	glUniformMatrix4fv(glGetUniformLocation(program, "translation"), 1, GL_TRUE, translation.m);
-	glUniformMatrix4fv(glGetUniformLocation(program, "rotation"), 1, GL_TRUE, rotation.m);
-	glBindTexture(GL_TEXTURE_2D, dog_tex);	
-	//DrawModel(dog, program, "in_Position", 0L, "inTexCoord");
+	scaling = S(0.05,0.05,0.05);
+	pos.x = 100;
+	pos.y = 0;
+	pos.z = 200;
+	draw(5,6,pos,60,dog_tex,dog,program);
 	
-	//instance
-	DrawModelInstanced(dog, program, "in_Position", 0L, "inTexCoord", count);
+	//tree
+	scaling = S(0.05,0.05,0.05);
+	pos.x = 200;
+	pos.y = 0;
+	pos.z = 200;
+	draw(3,55,pos,0,tree_tex,tree,program);
+	pos.z = 150;
+	draw(4,35,pos,45,tree_tex,tree,program);
+	pos.z = 80;
+	scaling = S(0.03,0.03,0.03);
+	draw(2,75,pos,90,tree_tex,tree,program);
+	
 	
 	glutSwapBuffers();
 }
