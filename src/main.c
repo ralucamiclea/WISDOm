@@ -26,8 +26,8 @@ float verticalAngle = 0.0;
 
 vec3 posObj; //position of the moving cube
 mat4 frustum_matrix, camera_placement, rotation, translation, scaling, camera_skybox;
-Model *dog, *terrain, *skybox, *octagon, *tree;
-GLuint grass_tex, skybox_tex, dog_tex, tree_tex;
+Model *dog, *terrain, *skybox, *octagon, *tree, *bunny;
+GLuint grass_tex, skybox_tex, dog_tex, tree_tex, wood_tex;
 GLuint skyboxup_tex,skyboxdn_tex, skyboxlf_tex, skyboxrt_tex, skyboxbk_tex, skyboxft_tex;
 TextureData terrain_tex;
 
@@ -58,7 +58,7 @@ Model* GenerateTerrain(TextureData *tex)
 		{
 // Vertex array. You need to scale this properly
 			vertexArray[(x + z * tex->width)*3 + 0] = x / 1.0;
-			vertexArray[(x + z * tex->width)*3 + 1] = tex->imageData[(x + z * tex->width) * (tex->bpp/8)] / 30.0;
+			vertexArray[(x + z * tex->width)*3 + 1] = tex->imageData[(x + z * tex->width) * (tex->bpp/8)] / 20.0;
 			vertexArray[(x + z * tex->width)*3 + 2] = z / 1.0;
 
 			//for the calculateHeight funciton
@@ -204,18 +204,21 @@ void DrawModelInstanced(Model *m, GLuint program, char* vertexVariableName, char
 void init(void)
 {
 	//load textures
+	LoadTGATextureData("../tex/fft-terrain.tga", &terrain_tex);
+	terrain = GenerateTerrain(&terrain_tex);
 	LoadTGATextureSimple("../tex/grass.tga", &grass_tex);
 	LoadTGATextureSimple("../tex/skybox.tga", &skybox_tex);
+	/*
 	LoadTGATextureSimple("../tex/niceday2up.tga", &skyboxup_tex);
 	LoadTGATextureSimple("../tex/niceday2dn.tga", &skyboxdn_tex);
 	LoadTGATextureSimple("../tex/niceday2lf.tga", &skyboxlf_tex);
 	LoadTGATextureSimple("../tex/niceday2rt.tga", &skyboxrt_tex);
 	LoadTGATextureSimple("../tex/niceday2ft.tga", &skyboxft_tex);
 	LoadTGATextureSimple("../tex/niceday2bk.tga", &skyboxbk_tex);
+	*/
 	LoadTGATextureSimple("../tex/dog.tga", &dog_tex);
 	LoadTGATextureSimple("../tex/greenleaves.tga", &tree_tex);
-	LoadTGATextureData("../tex/fft-terrain.tga", &terrain_tex);
-	terrain = GenerateTerrain(&terrain_tex);
+	LoadTGATextureSimple("../tex/woodplanks.tga", &wood_tex);
 
 	//load objects
 	dog = LoadModelPlus("../obj/dog.obj");
@@ -223,6 +226,7 @@ void init(void)
 	skybox = LoadModelPlus("../obj/skybox.obj");
 	octagon = LoadModelPlus("../obj/octagon.obj"); //moving cube
 	tree = LoadModelPlus("../obj/nicetree.obj");
+	bunny = LoadModelPlus("../obj/bunny.obj");
 
 	dumpInfo();
 
@@ -358,7 +362,7 @@ void display(void)
 	pos.z = 200;
 	draw(5,6,pos,60,dog_tex,dog,program);
 	
-	//tree
+	//trees
 	scaling = S(0.05,0.05,0.05);
 	pos.x = 200;
 	pos.y = 0;
@@ -370,6 +374,12 @@ void display(void)
 	scaling = S(0.03,0.03,0.03);
 	draw(2,75,pos,90,tree_tex,tree,program);
 	
+	//bunny
+	scaling = S(2,2,2);
+	pos.x = 100;
+	pos.y = 0;
+	pos.z = 100;
+	draw(1,6,pos,t/1000,wood_tex,bunny,program);
 	
 	glutSwapBuffers();
 }
