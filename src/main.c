@@ -256,22 +256,7 @@ void init(void)
 
 	glUseProgram(skybox_program);
 	glUniformMatrix4fv(glGetUniformLocation(skybox_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
-<<<<<<< HEAD
-	
-=======
 
-	glUniform1i(glGetUniformLocation(skybox_program, "texUnit"), 0);
-	/*
-	glUniform1i(glGetUniformLocation(skybox_program, "texUnit1"), 0);
-	glUniform1i(glGetUniformLocation(skybox_program, "texUnit2"), 0);
-	glUniform1i(glGetUniformLocation(skybox_program, "texUnit3"), 0);
-	glUniform1i(glGetUniformLocation(skybox_program, "texUnit4"), 0);
-	glUniform1i(glGetUniformLocation(skybox_program, "texUnit5"), 0);
-	glUniform1i(glGetUniformLocation(skybox_program, "texUnit6"), 0);
-	*/
-
-	//terrain texture
->>>>>>> 046b3fb1971ee4b5575c64b1aec80d5a2e3ae0a0
 	glUseProgram(terrain_program);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 	
@@ -281,32 +266,22 @@ void init(void)
 }
 
 //DRAW objects as specified
-<<<<<<< HEAD
-void draw(int edge_val, int offset, vec3 pos, int rotangle, Model *obj, GLuint program){
-	
-=======
-void draw(int edge_val, int offset, vec3 pos, int rotangle, GLuint texture, Model *obj, GLuint program){
 
->>>>>>> 046b3fb1971ee4b5575c64b1aec80d5a2e3ae0a0
+void draw(int edge_val, int distance_offset, int origin_offset, vec3 pos, int rotangle, Model *obj, GLuint program){
+	
 	edge = edge_val;
 	int count = 1 * edge;
 	int i;
-	translation = T(pos.x, calculateHeight(terrain, pos), pos.z);
+	translation = T(pos.x, calculateHeight(terrain, pos) + origin_offset, pos.z);
 	rotation = Ry(rotangle);
 
 	glUniform1i(glGetUniformLocation(program, "edge"), edge);
 	glUniform1i(glGetUniformLocation(program, "count"), count);
-	glUniform1i(glGetUniformLocation(program, "distance"), offset);
+	glUniform1i(glGetUniformLocation(program, "distance"), distance_offset);
 	glUniformMatrix4fv(glGetUniformLocation(program, "scaling"), 1, GL_TRUE, scaling.m);
 	glUniformMatrix4fv(glGetUniformLocation(program, "translation"), 1, GL_TRUE, translation.m);
 	glUniformMatrix4fv(glGetUniformLocation(program, "rotation"), 1, GL_TRUE, rotation.m);
-<<<<<<< HEAD
-	
-=======
 
-	glBindTexture(GL_TEXTURE_2D, texture);
-
->>>>>>> 046b3fb1971ee4b5575c64b1aec80d5a2e3ae0a0
 	//instancing
 	DrawModelInstanced(obj, program, "in_Position", 0L, "inTexCoord", count);
 }
@@ -318,10 +293,6 @@ void display(void)
 	//set up the camera
 	right = SetVector(sin(horizontalAngle-3.14/2.0), 0, cos(horizontalAngle-3.14/2.0));
 	up = CrossProduct(right, direction);
-
-	//smooth movement of the camera
-	position.y = smoothen(0.5, 1, position, t_cam) + 3;
-	t_cam = position.y;
 
 	camera_placement = lookAt(position.x, position.y, position.z, position.x + direction.x, position.y + direction.y, position.z + direction.z, 0, 1, 0);
 
@@ -368,15 +339,10 @@ void display(void)
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "translation"), 1, GL_TRUE, translation.m);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "camera"), 1, GL_TRUE, camera_placement.m);
 	glBindTexture(GL_TEXTURE_2D, grass_tex);
-<<<<<<< HEAD
 	glUniform1i(glGetUniformLocation(terrain_program, "texUnit"), 0);	
 	DrawModel(terrain, terrain_program, "in_Position", "in_Normal", "inTexCoord");
 	
-=======
-	DrawModel(terrain, terrain_program, "in_Position", "in_Normal", "inTexCoord");
-
-
->>>>>>> 046b3fb1971ee4b5575c64b1aec80d5a2e3ae0a0
+	
 	//draw objects
 	glUseProgram(program);
 	glUniformMatrix4fv(glGetUniformLocation(program, "camera"), 1, GL_TRUE, camera_placement.m);
@@ -386,15 +352,10 @@ void display(void)
 	pos.x = 100;
 	pos.y = 0;
 	pos.z = 200;
-<<<<<<< HEAD
 	glBindTexture(GL_TEXTURE_2D, dog_tex);	
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	draw(5,6,pos,60,dog,program);
+	draw(5,6,0,pos,60,dog,program);
 	
-=======
-	draw(5,6,pos,60,dog_tex,dog,program);
-
->>>>>>> 046b3fb1971ee4b5575c64b1aec80d5a2e3ae0a0
 	//trees
 	scaling = S(0.05,0.05,0.05);
 	pos.x = 200;
@@ -402,32 +363,22 @@ void display(void)
 	pos.z = 200;
 	glBindTexture(GL_TEXTURE_2D, tree_tex);	
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	draw(3,55,pos,0,tree,program);
+	draw(3,55,0,pos,0,tree,program);
 	pos.z = 150;
-	draw(4,35,pos,45,tree,program);
+	draw(4,35,0,pos,45,tree,program);
 	pos.z = 80;
 	scaling = S(0.03,0.03,0.03);
-<<<<<<< HEAD
-	draw(2,75,pos,90,tree,program);
+	draw(2,75,0,pos,90,tree,program);
 	
-=======
-	draw(2,75,pos,90,tree_tex,tree,program);
-
->>>>>>> 046b3fb1971ee4b5575c64b1aec80d5a2e3ae0a0
 	//bunny
 	scaling = S(2,2,2);
 	pos.x = 100;
-	pos.y = sin(t);
+	pos.y = 0;
 	pos.z = 100;
-<<<<<<< HEAD
 	glBindTexture(GL_TEXTURE_2D, dirt_tex);	
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	draw(1,6,pos,t/100,bunny,program);
+	draw(1,6,1,pos,t/100,bunny,program);
 	
-=======
-	draw(1,6,pos,t/1000,wood_tex,bunny,program);
-
->>>>>>> 046b3fb1971ee4b5575c64b1aec80d5a2e3ae0a0
 	glutSwapBuffers();
 }
 
@@ -489,7 +440,7 @@ void OnTimer(int value)
 
 	}
 
-	if (glutKeyIsDown('p'))
+	if (glutKeyIsDown('q'))
 	{
 		exit(0);
 	}
