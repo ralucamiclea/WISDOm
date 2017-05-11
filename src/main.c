@@ -34,6 +34,8 @@ float verticalAngle = 0.0;
 mat4 frustum_matrix, camera_placement, rotation, translation, scaling, camera_skybox;
 Model *dog, *terrain, *octagon, *tree, *bunny;
 GLuint grass_tex, dog_tex, tree_tex, wood_tex, dirt_tex;
+Model *tree2, *ring, *house, *deer, *bear, *boar, *wolf, *bird; 
+GLuint deer_tex, bear_tex, boar_tex, wolf_tex;
 TextureData terrain_tex;
 GLuint program, skybox_program, terrain_program; // Reference to shader program
 
@@ -387,6 +389,10 @@ void init(void)
 	LoadTGATextureSimple("../tex/greenleaves.tga", &tree_tex);
 	LoadTGATextureSimple("../tex/woodplanks.tga", &wood_tex);
 	LoadTGATextureSimple("../tex/dirt.tga", &dirt_tex);
+	LoadTGATextureSimple("../tex/deer.tga", &deer_tex);
+	LoadTGATextureSimple("../tex/bear.tga", &bear_tex);
+	LoadTGATextureSimple("../tex/boar.tga", &boar_tex);
+	LoadTGATextureSimple("../tex/wolf.tga", &wolf_tex);
 
 	//load skybox
 	for (i = 0; i < 6; i++)
@@ -405,7 +411,15 @@ void init(void)
 	octagon = LoadModelPlus("../obj/octagon.obj");
 	tree = LoadModelPlus("../obj/nicetree.obj");
 	bunny = LoadModelPlus("../obj/bunny.obj");
-
+	tree2 = LoadModelPlus("../obj/tree.obj");
+	ring = LoadModelPlus("../obj/tree.obj");	
+	house = LoadModelPlus("../obj/tree.obj");
+	deer = LoadModelPlus("../obj/deer-obj.obj");
+	bear = LoadModelPlus("../obj/bear-obj.obj");
+	boar = LoadModelPlus("../obj/boar-obj.obj");
+	wolf = LoadModelPlus("../obj/wolf-obj.obj");
+	bird = LoadModelPlus("../obj/bird.obj");
+	
 	dumpInfo();
 
 	// GL inits
@@ -548,6 +562,51 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, dirt_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	draw(1,6,1,pos,t/100,bunny,program);
+	
+	//deer
+	scaling = S(0.2,0.2,0.2);
+	pos.x = 3;
+	pos.y = 0;
+	pos.z = 10;
+	glBindTexture(GL_TEXTURE_2D, deer_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	draw(1,6,1,pos,45,deer,program);
+	
+	//bear
+	scaling = S(0.2,0.2,0.2);
+	pos.x = 15;
+	pos.y = 0;
+	pos.z = 10;
+	glBindTexture(GL_TEXTURE_2D, bear_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	draw(1,6,1,pos,45,bear,program);
+	
+	//boar
+	scaling = S(0.2,0.2,0.2);
+	pos.x = 10;
+	pos.y = 0;
+	pos.z = 4;
+	glBindTexture(GL_TEXTURE_2D, boar_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	draw(1,6,1,pos,45,boar,program);
+	
+	//wolf
+	scaling = S(0.2,0.2,0.2);
+	pos.x = 10;
+	pos.y = 0;
+	pos.z = 10;
+	glBindTexture(GL_TEXTURE_2D, wolf_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	draw(1,6,1,pos,45,wolf,program);
+	
+	//bird
+	scaling = S(0.2,0.2,0.2);
+	pos.x = 10;
+	pos.y = 0;
+	pos.z = 10;
+	glBindTexture(GL_TEXTURE_2D, dirt_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	draw(1,6,15,pos,45,bird,program);
 	
 	glutSwapBuffers();
 }
