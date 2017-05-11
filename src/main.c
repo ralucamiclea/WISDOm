@@ -13,10 +13,12 @@
 #define HEIGHT 1000
 #define WIDTH 1000
 
+#define COLLISION_DIST 1.0f
+
 
 
 // Globals
-vec3 position = {0.0,50.0,0.0};
+vec3 position = {3.0,10.0,3.0};
 vec3 direction = {0.0,0.0,0.0};
 vec3 right = {0.0,0.0,0.0};
 vec3 up = {0.0,0.0,0.0};
@@ -44,6 +46,18 @@ float obj_t=0, t_cam=0;
 int texWidth=0; //for calculateHeight function
 
 int edge = 5; //for object instancing
+
+
+struct wall_hitbox {
+	float vertices [6];
+	float height;
+};
+
+int n_walls;
+
+
+struct wall_hitbox walls [1000] = {};
+float test [5] = {0,1};
 
 
 //TERRAIN GENERATION function
@@ -213,7 +227,7 @@ void init(void)
 	LoadTGATextureData("../tex/fft-terrain.tga", &terrain_tex);
 	terrain = GenerateTerrain(&terrain_tex);
 	LoadTGATextureSimple("../tex/grass.tga", &grass_tex);
-	
+
 	LoadTGATextureSimple("../tex/skybox.tga", &skybox_tex);
 	LoadTGATextureSimple("../tex/niceday2up.tga", &skyboxup_tex);
 	LoadTGATextureSimple("../tex/niceday2dn.tga", &skyboxdn_tex);
@@ -221,7 +235,7 @@ void init(void)
 	LoadTGATextureSimple("../tex/niceday2rt.tga", &skyboxrt_tex);
 	LoadTGATextureSimple("../tex/niceday2ft.tga", &skyboxft_tex);
 	LoadTGATextureSimple("../tex/niceday2bk.tga", &skyboxbk_tex);
-	
+
 	LoadTGATextureSimple("../tex/dog.tga", &dog_tex);
 	LoadTGATextureSimple("../tex/greenleaves.tga", &tree_tex);
 	LoadTGATextureSimple("../tex/woodplanks.tga", &wood_tex);
@@ -229,10 +243,10 @@ void init(void)
 
 	//load objects
 	dog = LoadModelPlus("../obj/dog.obj");
-	
+
 	//skybox = LoadModelPlus("../obj/skybox1.obj");
 	skybox = LoadModelPlus("../obj/skybox.obj");
-	
+
 	octagon = LoadModelPlus("../obj/octagon.obj"); //moving cube
 	tree = LoadModelPlus("../obj/nicetree.obj");
 	bunny = LoadModelPlus("../obj/bunny.obj");
@@ -259,7 +273,7 @@ void init(void)
 
 	glUseProgram(terrain_program);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
-	
+
 	glUseProgram(program);
 	glUniformMatrix4fv(glGetUniformLocation(program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 
@@ -268,7 +282,7 @@ void init(void)
 //DRAW objects as specified
 
 void draw(int edge_val, int distance_offset, int origin_offset, vec3 pos, int rotangle, Model *obj, GLuint program){
-	
+
 	edge = edge_val;
 	int count = 1 * edge;
 	int i;
@@ -317,9 +331,9 @@ void display(void)
 
 	glUniformMatrix4fv(glGetUniformLocation(skybox_program, "camera"), 1, GL_TRUE, camera_skybox.m);
 	glUniformMatrix4fv(glGetUniformLocation(skybox_program, "translation"), 1, GL_TRUE, translation.m);
-	
+
 	//skybox texture
-	
+
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, skybox_tex);
 	glUniform1i(glGetUniformLocation(skybox_program, "texUnit1"), 1);
@@ -339,10 +353,10 @@ void display(void)
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "translation"), 1, GL_TRUE, translation.m);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "camera"), 1, GL_TRUE, camera_placement.m);
 	glBindTexture(GL_TEXTURE_2D, grass_tex);
-	glUniform1i(glGetUniformLocation(terrain_program, "texUnit"), 0);	
+	glUniform1i(glGetUniformLocation(terrain_program, "texUnit"), 0);
 	DrawModel(terrain, terrain_program, "in_Position", "in_Normal", "inTexCoord");
-	
-	
+
+
 	//draw objects
 	glUseProgram(program);
 	glUniformMatrix4fv(glGetUniformLocation(program, "camera"), 1, GL_TRUE, camera_placement.m);
@@ -352,16 +366,16 @@ void display(void)
 	pos.x = 100;
 	pos.y = 0;
 	pos.z = 200;
-	glBindTexture(GL_TEXTURE_2D, dog_tex);	
+	glBindTexture(GL_TEXTURE_2D, dog_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	draw(5,6,0,pos,60,dog,program);
-	
+
 	//trees
 	scaling = S(0.05,0.05,0.05);
 	pos.x = 200;
 	pos.y = 0;
 	pos.z = 200;
-	glBindTexture(GL_TEXTURE_2D, tree_tex);	
+	glBindTexture(GL_TEXTURE_2D, tree_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	draw(3,55,0,pos,0,tree,program);
 	pos.z = 150;
@@ -369,24 +383,71 @@ void display(void)
 	pos.z = 80;
 	scaling = S(0.03,0.03,0.03);
 	draw(2,75,0,pos,90,tree,program);
-	
+
 	//bunny
 	scaling = S(2,2,2);
 	pos.x = 100;
 	pos.y = 0;
 	pos.z = 100;
-	glBindTexture(GL_TEXTURE_2D, dirt_tex);	
+	glBindTexture(GL_TEXTURE_2D, dirt_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	draw(1,6,1,pos,t/100,bunny,program);
-	
+
 	glutSwapBuffers();
 }
+
+
+vec3 check_collision_objects(float dist)
+{
+	int i;
+	for (i = 0; i < n_walls; i++)
+	{
+		// x = az + b
+		float y = walls[i].vertices[1];
+		float x1 = walls[i].vertices[0];
+		float x2 = walls[i].vertices[3];
+		float z1 = walls[i].vertices[2];
+		float z2 = walls[i].vertices[5];
+
+		if (z2 != z1) {
+
+			float a = (x2 - x1)/(z2 - z1); // equation
+			float b = x1 - a*z1;
+
+			float point = a * position.z + b;
+			if ((point > position.x && point < position.x + dist) || (point < position.x && point > position.x - dist)) // If player is within a "dist" distance from the line
+			{
+				if (position.y > y && position.y < y+walls[i].height) {
+					printf("COLLISION\n");
+					vec3 out = {x2-x1,y,z2-z1};
+					return Normalize(out);
+				}
+			}
+		}
+		else // Wall is on x axis
+		{
+			if ((position.z > z1 && position.z < z1 + dist) || (position.z < z1 && position.z > z1 - dist))
+			{
+				printf("COLLISION\n");
+				vec3 out = {1,y,0};
+				return Normalize(out);
+			}
+		}
+
+	}
+	printf("\n");
+	vec3 out = {};
+	return out;
+}
+
 
 //CONTROLS
 void OnTimer(int value)
 {
 	glutTimerFunc(20, &OnTimer, value);
 	glutPostRedisplay();
+
+	check_collision_objects(COLLISION_DIST);
 
 	float ground_height = smoothen(speed, 1, position, t_cam) + player_height;
 	t_cam = position.y;
@@ -483,7 +544,33 @@ void mouseMove(int x, int y) {
 	}
 }
 
+void create_wall(float a, float b, float c, float d, float e, float f, float height)
+{
+	struct wall_hitbox wall1;
+	wall1.vertices[0] = a;
+	wall1.vertices[1] = b;
+	wall1.vertices[2] = c;
+	wall1.vertices[3] = d;
+	wall1.vertices[4] = e;
+	wall1.vertices[5] = f;
+	wall1.height = height;
+	walls[n_walls] = wall1;
+	n_walls++;
+}
+
 int main(int argc, char *argv[]){
+	time_air = 0;
+	collision_ground = false;
+	collision_object = false;
+	jumping = false;
+	n_walls = 0;
+
+	// 4 World limits
+	create_wall(0, -20, 0, 0, -20, 500, 100);
+	create_wall(0, -20, 0, 500, -20, 0, 100);
+	create_wall(255, -20, 0, 255, -20, 500, 100);
+	create_wall(0, -20, 255, 500, -20, 255, 100);
+
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH);
