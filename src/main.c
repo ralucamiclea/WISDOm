@@ -15,6 +15,9 @@
 
 #define COLLISION_DIST 1.0f
 
+#define SPRINT 8.0f
+#define BACKWARDS 0.5f
+#define SIDEWARDS 0.7f
 
 
 // Globals
@@ -418,8 +421,8 @@ vec3 check_collision_objects(float dist)
 			if ((point > position.x && point < position.x + dist) || (point < position.x && point > position.x - dist)) // If player is within a "dist" distance from the line
 			{
 				if (position.y > y && position.y < y+walls[i].height) {
-					printf("COLLISION\n");
-					vec3 out = {x2-x1,y,z2-z1};
+					vec3 out = {x2-x1,0,z2-z1};
+					collision_object = true;
 					return Normalize(out);
 				}
 			}
@@ -428,26 +431,52 @@ vec3 check_collision_objects(float dist)
 		{
 			if ((position.z > z1 && position.z < z1 + dist) || (position.z < z1 && position.z > z1 - dist))
 			{
-				printf("COLLISION\n");
-				vec3 out = {1,y,0};
+				vec3 out = {x2-x1,0,0}; // Necessary for the orientation of the wall
+				out = Normalize(out);
+				collision_object = true;
 				return Normalize(out);
 			}
 		}
 
 	}
-	printf("\n");
-	vec3 out = {};
+	vec3 out = Normalize(direction);
+	collision_object = false;
 	return out;
+}
+
+float dot(vec3 v1, vec3 v2)
+{
+	return v1.x * v2.x + v1.z * v2.z;
 }
 
 
 //CONTROLS
 void OnTimer(int value)
 {
+
 	glutTimerFunc(20, &OnTimer, value);
 	glutPostRedisplay();
 
-	check_collision_objects(COLLISION_DIST);
+	vec3 collision_vector;
+	collision_vector = check_collision_objects(COLLISION_DIST);
+
+	float collision_factor;
+	if (collision_object)
+	{
+		vec3 rotated_direction = {-direction.z, 0, direction.x};
+		rotated_direction = Normalize(rotated_direction);
+		collision_factor = dot(collision_vector, direction);
+		if (dot(rotated_direction,collision_vector) > 0)
+		{
+			collision_factor = 1;
+			collision_object = false;
+		}
+	}
+	else
+	{
+		collision_factor = 1;
+	}
+
 
 	float ground_height = smoothen(speed, 1, position, t_cam) + player_height;
 	t_cam = position.y;
@@ -458,19 +487,45 @@ void OnTimer(int value)
 	}
 
 
+	printf("x=%f z=%f factor=%f colX=%f colZ=%f\n", direction.x, direction.z, collision_factor, collision_vector.x, collision_vector.z);
+
 	if (glutKeyIsDown('e') && glutKeyIsDown('w')){ // Sprint (Shift)
-		position.x += direction.x * speed * 2;
-		position.z += direction.z * speed * 2;
+		if (collision_object)
+		{
+			position.x += direction.x * speed * SPRINT * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z += direction.z * speed * SPRINT * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
+		}
+		else
+		{
+			position.x += direction.x * speed * SPRINT * collision_factor;
+			position.z += direction.z * speed * SPRINT * collision_factor;
+		}
 	}
 
 	if (glutKeyIsDown('w')){ //move camera forward
-		position.x += direction.x * speed;
-		position.z += direction.z * speed;
+		if (collision_object)
+		{
+			position.x += direction.x * speed * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z += direction.z * speed * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
+		}
+		else
+		{
+			position.x += direction.x * speed * collision_factor;
+			position.z += direction.z * speed * collision_factor;
+		}
 	}
 
 	if (glutKeyIsDown('s')){ //move camera backwards
-		position.x -= direction.x * speed*0.5;
-		position.z -= direction.z * speed*0.5;
+		if (collision_object)
+		{
+			position.x -= direction.x * speed * BACKWARDS * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z -= direction.z * speed * BACKWARDS * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
+		}
+		else
+		{
+			position.x -= direction.x * speed * collision_factor;
+			position.z -= direction.z * speed * collision_factor;
+		}
 	}
 
 	if (glutKeyIsDown('a')){ //rotate camera left around Y axis
@@ -478,7 +533,7 @@ void OnTimer(int value)
 		position.z -= direction.x * speed*0.7;
 	}
 
-	if (glutKeyIsDown('d')){ //rotate camera right around Y axis
+	if (glutKeyIsDown('d')){ //rotate camera right around Y axis< < 0
 		position.x -= direction.z * speed*0.7;
 		position.z += direction.x * speed*0.7;
 	}
@@ -544,6 +599,13 @@ void mouseMove(int x, int y) {
 	}
 }
 
+
+/**
+*		create_wall:
+*			Used to add a wall to the list of all hitboxes that the player cannot cross
+*			IMPORTANT: Walls can be crossed from one side.
+*
+**/
 void create_wall(float a, float b, float c, float d, float e, float f, float height)
 {
 	struct wall_hitbox wall1;
@@ -566,10 +628,10 @@ int main(int argc, char *argv[]){
 	n_walls = 0;
 
 	// 4 World limits
-	create_wall(0, -20, 0, 0, -20, 500, 100);
-	create_wall(0, -20, 0, 500, -20, 0, 100);
-	create_wall(255, -20, 0, 255, -20, 500, 100);
-	create_wall(0, -20, 255, 500, -20, 255, 100);
+	create_wall(0, -20, 0, 0, -20, 500, 100); // Z Axis from origin
+	create_wall(500, -20, 0, 0, -20, 0, 100); // X Axis from origin
+	create_wall(255, -20, 500, 255, -20, 0, 100); // Z Axis
+	create_wall(0, -20, 255, 500, -20, 255, 100); // X Axis
 
 
 	glutInit(&argc, argv);
