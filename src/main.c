@@ -18,6 +18,8 @@
 #define SPRINT 8.0f
 #define BACKWARDS 0.5f
 #define SIDEWARDS 0.7f
+#define PLAYER_HEIGHT 0.8f
+#define PLAYER_SPEED 0.2f
 
 // Globals
 vec3 position = {3.0,10.0,3.0};
@@ -25,8 +27,9 @@ vec3 direction = {0.0,0.0,0.0};
 vec3 right = {0.0,0.0,0.0};
 vec3 up = {0.0,0.0,0.0};
 
-static float speed = 0.2f;
-static float player_height = 0.8f;
+
+static float player_height = PLAYER_HEIGHT;
+static float player_speed = PLAYER_SPEED;
 bool collision_ground, collision_object, jumping;
 int time_air;
 
@@ -693,7 +696,7 @@ void OnTimer(int value)
 	}
 
 
-	float ground_height = smoothen(speed, 1, position, t_cam) + player_height;
+	float ground_height = smoothen(player_speed, 1, position, t_cam) + player_height;
 	t_cam = position.y;
 	if (position.y < ground_height) {
 		collision_ground = true;
@@ -702,27 +705,27 @@ void OnTimer(int value)
 	}
 
 
+
 	if (glutKeyIsDown('e') && glutKeyIsDown('w')){ // Sprint (Shift)
-		if (dot(rotated_direction,collision_vector) > 0)
-		{
-			collision_factor = 1;
-			sideways_factor = 1;
-			collision_object = false;
-		}
-		if (collision_object)
-		{
-			position.x += direction.x * speed * SPRINT * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
-			position.z += direction.z * speed * SPRINT * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
+			player_speed = PLAYER_SPEED * 2;
+			player_height = PLAYER_HEIGHT;
+	}
+	else
+	{
+		if (glutKeyIsDown('c')){ // Crouching
+				player_speed = PLAYER_SPEED / 2;
+				player_height = PLAYER_HEIGHT / 2;
 		}
 		else
 		{
-			position.x += direction.x * speed * SPRINT * collision_factor;
-			position.z += direction.z * speed * SPRINT * collision_factor;
+				player_speed = PLAYER_SPEED;
+				player_height = PLAYER_HEIGHT;
 		}
 	}
 
+
 	if (glutKeyIsDown('w')){ //move camera forward
-		if (dot(rotated_direction,collision_vector) > 0)
+		if (dot(rotated_direction,collision_vector) > 0) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 		{
 			collision_factor = 1;
 			sideways_factor = 1;
@@ -730,18 +733,18 @@ void OnTimer(int value)
 		}
 		if (collision_object)
 		{
-			position.x += direction.x * speed * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
-			position.z += direction.z * speed * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
+			position.x += direction.x * player_speed * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z += direction.z * player_speed * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
 		}
 		else
 		{
-			position.x += direction.x * speed * collision_factor;
-			position.z += direction.z * speed * collision_factor;
+			position.x += direction.x * player_speed * collision_factor;
+			position.z += direction.z * player_speed * collision_factor;
 		}
 	}
 
 	if (glutKeyIsDown('s')){ //move camera backwards
-		if (dot(rotated_direction,collision_vector) < 0)
+		if (dot(rotated_direction,collision_vector) < 0) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 		{
 			collision_factor = 1;
 			sideways_factor = 1;
@@ -749,18 +752,18 @@ void OnTimer(int value)
 		}
 		if (collision_object)
 		{
-			position.x -= direction.x * speed * BACKWARDS * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
-			position.z -= direction.z * speed * BACKWARDS * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
+			position.x -= direction.x * player_speed * BACKWARDS * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z -= direction.z * player_speed * BACKWARDS * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
 		}
 		else
 		{
-			position.x -= direction.x * speed * collision_factor;
-			position.z -= direction.z * speed * collision_factor;
+			position.x -= direction.x * player_speed * BACKWARDS * collision_factor;
+			position.z -= direction.z * player_speed * BACKWARDS * collision_factor;
 		}
 	}
 
 	if (glutKeyIsDown('a')){ // Move left
-		if (dot(direction,collision_vector) > 0)
+		if (dot(direction,collision_vector) > 0) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 		{
 			collision_factor = 1;
 			sideways_factor = 1;
@@ -768,18 +771,18 @@ void OnTimer(int value)
 		}
 		if (collision_object)
 		{
-			position.x += direction.z * speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.x,2));
-			position.z -= direction.x * speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.z,2));
+			position.x += direction.z * player_speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z -= direction.x * player_speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.z,2));
 		}
 		else
 		{
-			position.x += direction.z * speed * SIDEWARDS;
-			position.z -= direction.x * speed * SIDEWARDS;
+			position.x += direction.z * player_speed * SIDEWARDS;
+			position.z -= direction.x * player_speed * SIDEWARDS;
 		}
 	}
 
 	if (glutKeyIsDown('d')){ // Move right
-		if (dot(direction,collision_vector) < 0)
+		if (dot(direction,collision_vector) < 0) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 		{
 			collision_factor = 1;
 			sideways_factor = 1;
@@ -787,19 +790,16 @@ void OnTimer(int value)
 		}
 		if (collision_object)
 		{
-			position.x -= direction.z * speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.x,2));
-			position.z += direction.x * speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.z,2));
+			position.x -= direction.z * player_speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z += direction.x * player_speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.z,2));
 		}
 		else
 		{
-			position.x -= direction.z * speed * SIDEWARDS;
-			position.z += direction.x * speed * SIDEWARDS;
+			position.x -= direction.z * player_speed * SIDEWARDS;
+			position.z += direction.x * player_speed * SIDEWARDS;
 		};
 	}
 
-	if (glutKeyIsDown('c')){ // Crouching
-
-	}
 
 
 	if (glutKeyIsDown(32)){ // jump (Space)
@@ -833,7 +833,7 @@ void OnTimer(int value)
 		}
 	}
 	else {
-		position.y = smoothen(speed, 1, position, t_cam) + player_height;
+		position.y = smoothen(PLAYER_SPEED, 1, position, t_cam) + player_height;
 		t_cam = position.y;
 	}
 
