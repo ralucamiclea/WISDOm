@@ -15,9 +15,22 @@
 
 #define COLLISION_DIST 1.0f
 
-#define SPRINT 8.0f
+#define SPRINT 2.0f
 #define BACKWARDS 0.5f
 #define SIDEWARDS 0.7f
+#define PLAYER_HEIGHT 0.8f
+#define PLAYER_SPEED 0.2f
+
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
+
+
+//CREATOR MODES
+#define METRICS true
+#define NOCLIP false
+#define SUPER_SPRINT true
+
+
 
 // Globals
 vec3 position = {3.0,10.0,3.0};
@@ -25,8 +38,9 @@ vec3 direction = {0.0,0.0,0.0};
 vec3 right = {0.0,0.0,0.0};
 vec3 up = {0.0,0.0,0.0};
 
-static float speed = 0.2f;
-static float player_height = 0.8f;
+static bool noclip = NOCLIP;
+static float player_height = PLAYER_HEIGHT;
+static float player_speed = PLAYER_SPEED;
 bool collision_ground, collision_object, jumping;
 int time_air;
 
@@ -187,11 +201,17 @@ struct wall_hitbox {
 	float height;
 };
 
-int n_walls;
+struct ground_hitbox {
+	float vertices [4];
+	float height;
+};
+
+int n_walls, n_grounds;
 
 
 struct wall_hitbox walls [1000] = {};
-float test [5] = {0,1};
+struct ground_hitbox grounds [1000] = {};
+
 
 //LOAD texture
 void loadTextures()
@@ -319,11 +339,25 @@ Model* GenerateTerrain(TextureData *tex)
 }
 
 //HEIGHT function
-GLfloat calculateHeight(Model *groundMap, vec3 position){
+GLfloat calculateGroundHeight(Model *groundMap, vec3 position){
+	int i;
+	for (i = 0; i < n_grounds; i++)
+	{
+		float x1 = grounds[i].vertices[0];
+		float z1 = grounds[i].vertices[1];
+		float x2 = grounds[i].vertices[2];
+		float z2 = grounds[i].vertices[3];
+		float height = grounds[i].height;
+		if ((position.x > MIN(x1, x2) && (position.x < MAX(x1, x2)))&&(position.z > MIN(z1, z2) && position.z < MAX(z1, z2)))
+		{
+				return height;
+		}
+	}
+	return groundMap->vertexArray[((int)position.x + (int)position.z * texWidth)*3 + 1];
+}
 
-	GLfloat height = 0;
-	height = groundMap->vertexArray[((int)position.x + (int)position.z * texWidth)*3 + 1];
-	return height;
+GLfloat calculateHeight(Model *groundMap, vec3 position){
+	return groundMap->vertexArray[((int)position.x + (int)position.z * texWidth)*3 + 1];
 }
 
 //SMOOTH Movement
@@ -337,7 +371,7 @@ float smoothen(float speed, float smoothing, vec3 posObj, float old_height){
 	newposObj.x = posObj.x+(speed*smoothing);
 	newposObj.z = posObj.z+(speed*smoothing);
 	//calculate slope
-	slope = 1.3*(calculateHeight(terrain, newposObj)-old_height);
+	slope = 1.3*(calculateGroundHeight(terrain, newposObj)-old_height);
 	posObj.y = slope*speed + old_height;
 	old_height = posObj.y;
 	return posObj.y;
@@ -724,6 +758,14 @@ float dot(vec3 v1, vec3 v2)
 void OnTimer(int value)
 {
 
+	if (METRICS)
+	{
+		printf("position :(%f, %f, %f)\n", position.x, position.y, position.z);
+		printf("direction:(%f, %f, %f)\n", direction.x, direction.y, direction.z);
+		printf("ground height: %f (%f)\n", calculateHeight, calculateGroundHeight);
+		printf("\n");
+	}
+
 	vec3 rotated_direction;
 
 	glutTimerFunc(20, &OnTimer, value);
@@ -733,7 +775,7 @@ void OnTimer(int value)
 	collision_vector = check_collision_objects(COLLISION_DIST);
 
 	float collision_factor, sideways_factor;
-	if (collision_object)
+	if (collision_object && !noclip)
 	{
 		rotated_direction.x = -direction.z;
 		rotated_direction.y = 0;
@@ -748,127 +790,125 @@ void OnTimer(int value)
 		sideways_factor = 1;
 	}
 
-
-	float ground_height = smoothen(speed, 1, position, t_cam) + player_height;
-	t_cam = position.y;
-	if (position.y < ground_height) {
-		collision_ground = true;
-		time_air = 0;
-		jumping = false;
+	if (!noclip) {
+		float ground_height = smoothen(player_speed, 1, position, t_cam) + player_height;
+		t_cam = position.y;
+		if (position.y < ground_height) {
+			collision_ground = true;
+			time_air = 0;
+			jumping = false;
+		}
 	}
 
 
 	if (glutKeyIsDown('e') && glutKeyIsDown('w')){ // Sprint (Shift)
-		if (dot(rotated_direction,collision_vector) > 0)
-		{
-			collision_factor = 1;
-			sideways_factor = 1;
-			collision_object = false;
-		}
-		if (collision_object)
-		{
-			position.x += direction.x * speed * SPRINT * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
-			position.z += direction.z * speed * SPRINT * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
+			if (SUPER_SPRINT)
+				player_speed = PLAYER_SPEED * SPRINT * 5;
+			else
+				player_speed = PLAYER_SPEED * SPRINT;
+			player_height = PLAYER_HEIGHT;
+	}
+	else
+	{
+		if (glutKeyIsDown('c')){ // Crouching
+				player_speed = PLAYER_SPEED / 2;
+				player_height = PLAYER_HEIGHT / 2;
 		}
 		else
 		{
-			position.x += direction.x * speed * SPRINT * collision_factor;
-			position.z += direction.z * speed * SPRINT * collision_factor;
+				player_speed = PLAYER_SPEED;
+				player_height = PLAYER_HEIGHT;
 		}
 	}
 
+
 	if (glutKeyIsDown('w')){ //move camera forward
-		if (dot(rotated_direction,collision_vector) > 0)
+		if (dot(rotated_direction,collision_vector) > 0) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 		{
 			collision_factor = 1;
 			sideways_factor = 1;
 			collision_object = false;
 		}
-		if (collision_object)
+		if (collision_object && !noclip)
 		{
-			position.x += direction.x * speed * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
-			position.z += direction.z * speed * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
+			position.x += direction.x * player_speed * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z += direction.z * player_speed * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
 		}
 		else
 		{
-			position.x += direction.x * speed * collision_factor;
-			position.z += direction.z * speed * collision_factor;
+			position.x += direction.x * player_speed;
+			if (noclip)
+				position.y += direction.y * player_speed;
+			position.z += direction.z * player_speed;
 		}
 	}
 
 	if (glutKeyIsDown('s')){ //move camera backwards
-		if (dot(rotated_direction,collision_vector) < 0)
+		if (dot(rotated_direction,collision_vector) < 0) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 		{
 			collision_factor = 1;
 			sideways_factor = 1;
 			collision_object = false;
 		}
-		if (collision_object)
+		if (collision_object && !noclip)
 		{
-			position.x -= direction.x * speed * BACKWARDS * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
-			position.z -= direction.z * speed * BACKWARDS * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
+			position.x -= direction.x * player_speed * BACKWARDS * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z -= direction.z * player_speed * BACKWARDS * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.z,2));
 		}
 		else
 		{
-			position.x -= direction.x * speed * collision_factor;
-			position.z -= direction.z * speed * collision_factor;
+			position.x -= direction.x * player_speed * BACKWARDS;
+			position.z -= direction.z * player_speed * BACKWARDS;
 		}
 	}
 
 	if (glutKeyIsDown('a')){ // Move left
-		if (dot(direction,collision_vector) > 0)
+		if (dot(direction,collision_vector) > 0) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 		{
 			collision_factor = 1;
 			sideways_factor = 1;
 			collision_object = false;
 		}
-		if (collision_object)
+		if (collision_object && !noclip)
 		{
-			position.x += direction.z * speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.x,2));
-			position.z -= direction.x * speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.z,2));
+			position.x += direction.z * player_speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z -= direction.x * player_speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.z,2));
 		}
 		else
 		{
-			position.x += direction.z * speed * SIDEWARDS;
-			position.z -= direction.x * speed * SIDEWARDS;
+			position.x += direction.z * player_speed * SIDEWARDS;
+			position.z -= direction.x * player_speed * SIDEWARDS;
 		}
 	}
 
 	if (glutKeyIsDown('d')){ // Move right
-		if (dot(direction,collision_vector) < 0)
+		if (dot(direction,collision_vector) < 0) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 		{
 			collision_factor = 1;
 			sideways_factor = 1;
 			collision_object = false;
 		}
-		if (collision_object)
+		if (collision_object && !noclip)
 		{
-			position.x -= direction.z * speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.x,2));
-			position.z += direction.x * speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.z,2));
+			position.x -= direction.z * player_speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z += direction.x * player_speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.z,2));
 		}
 		else
 		{
-			position.x -= direction.z * speed * SIDEWARDS;
-			position.z += direction.x * speed * SIDEWARDS;
+			position.x -= direction.z * player_speed * SIDEWARDS;
+			position.z += direction.x * player_speed * SIDEWARDS;
 		};
 	}
 
-	if (glutKeyIsDown('c')){ // Crouching
-
-	}
 
 
 	if (glutKeyIsDown(32)){ // jump (Space)
-		if (collision_ground) // Jump only if touching ground
+		if (collision_ground || noclip) // Jump only if touching ground
 		{
 				jumping = true;
 				collision_ground = false;
 				time_air = 0;
 		}
-	}
-	else
-	{
-
 	}
 
 	if (glutKeyIsDown('q'))
@@ -878,19 +918,31 @@ void OnTimer(int value)
 
 
 	// Jump
-
-	if (!collision_ground) {
-		time_air++;
-		if (jumping){
-				position.y -= (float)(time_air - 20.0)/100.0;
+	if (!noclip) {
+		if (!collision_ground) {
+			time_air++;
+			if (jumping){
+					position.y -= (float)(time_air - 20.0)/100.0;
+			}
+			else {// falling
+					position.y -= (float)(time_air)/100.0;
+			}
 		}
-		else {// falling
-				position.y -= (float)(time_air)/100.0;
+		else {
+			position.y = smoothen(PLAYER_SPEED, 1, position, t_cam) + player_height;
+			t_cam = position.y;
 		}
 	}
-	else {
-		position.y = smoothen(speed, 1, position, t_cam) + player_height;
-		t_cam = position.y;
+	else // noclip
+	{
+			if (jumping)
+				position.y += 0.2;
+	}
+
+	if (noclip)
+	{
+		if (!glutKeyIsDown(32))
+			jumping = false;
 	}
 
 }
@@ -935,12 +987,25 @@ void create_wall(float a, float b, float c, float d, float e, float f, float hei
 	n_walls++;
 }
 
+void create_ground(float x1, float z1, float x2, float z2, float height)
+{
+	struct ground_hitbox ground1;
+	ground1.vertices[0] = x1;
+	ground1.vertices[1] = z1;
+	ground1.vertices[2] = x2;
+	ground1.vertices[3] = z2;
+	ground1.height = height;
+	grounds[n_grounds] = ground1;
+	n_grounds++;
+}
+
 int main(int argc, char *argv[]){
 	time_air = 0;
 	collision_ground = false;
 	collision_object = false;
 	jumping = false;
 	n_walls = 0;
+
 
 
 	glutInit(&argc, argv);
@@ -952,13 +1017,15 @@ int main(int argc, char *argv[]){
 	glutPassiveMotionFunc(mouseMove);
 	init();
 
-
-	printf("TEXWIDTH: %d\n", texWidth);
 	// 4 World limits
 	create_wall(0, -20, 0, 0, -20, texWidth-1, 100); // Z Axis from origin
 	create_wall(texWidth-1, -20, 0, 0, -20, 0, 100); // X Axis from origin
 	create_wall(texWidth-1, -20, texWidth-1, texWidth-1, -20, 0, 100); // Z Axis
 	create_wall(0, -20, texWidth-1, texWidth-1, -20, texWidth-1, 100); // X Axis
+
+	create_ground(99, 99, 101, 101, 15);
+	create_wall(99, 14, 99, 100, 14, 99, 10);
+
 
 	loadTextures(); //for skybox
 	glutTimerFunc(20, &OnTimer, 0);
