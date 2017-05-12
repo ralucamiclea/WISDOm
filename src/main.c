@@ -37,7 +37,7 @@ float verticalAngle = 0.0;
 mat4 frustum_matrix, camera_placement, rotation, translation, scaling, camera_skybox;
 Model *dog, *terrain, *octagon, *tree, *bunny;
 GLuint grass_tex, dog_tex, tree_tex, wood_tex, dirt_tex;
-Model *tree2, *ring, *house, *deer, *bear, *boar, *wolf, *bird; 
+Model *tree2, *ring, *house, *deer, *bear, *boar, *wolf, *bird;
 GLuint deer_tex, bear_tex, boar_tex, wolf_tex;
 TextureData terrain_tex;
 GLuint program, skybox_program, terrain_program; // Reference to shader program
@@ -183,12 +183,12 @@ float test [5] = {0,1};
 void loadTextures()
 {
 	int i;
-	
+
 	glGenTextures(1, &cubemap);	// Generate OpenGL texture IDs
 	glActiveTexture(GL_TEXTURE0); // Just make sure the texture unit match
-	
+
 	// Note all operations on GL_TEXTURE_CUBE_MAP, not GL_TEXTURE_2D
-	
+
 	// Load texture data and create ordinary texture objects (for skybox)
 	for (i = 0; i < 6; i++)
 	{
@@ -205,7 +205,7 @@ void loadTextures()
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, tx[3].w, tx[3].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[3].imageData);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, tx[4].w, tx[4].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[4].imageData);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, tx[5].w, tx[5].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[5].imageData);
-  
+
 	//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -383,7 +383,7 @@ void DrawModelInstanced(Model *m, GLuint program, char* vertexVariableName, char
 void init(void)
 {
 	int i;
-	
+
 	//load textures
 	LoadTGATextureData("../tex/fft-terrain.tga", &terrain_tex);
 	terrain = GenerateTerrain(&terrain_tex);
@@ -415,14 +415,14 @@ void init(void)
 	tree = LoadModelPlus("../obj/nicetree.obj");
 	bunny = LoadModelPlus("../obj/bunny.obj");
 	tree2 = LoadModelPlus("../obj/tree.obj");
-	ring = LoadModelPlus("../obj/tree.obj");	
+	ring = LoadModelPlus("../obj/tree.obj");
 	house = LoadModelPlus("../obj/tree.obj");
 	deer = LoadModelPlus("../obj/deer-obj.obj");
 	bear = LoadModelPlus("../obj/bear-obj.obj");
 	boar = LoadModelPlus("../obj/boar-obj.obj");
 	wolf = LoadModelPlus("../obj/wolf-obj.obj");
 	bird = LoadModelPlus("../obj/bird.obj");
-	
+
 	dumpInfo();
 
 	// GL inits
@@ -436,12 +436,12 @@ void init(void)
 	program = loadShaders("main.vert", "main.frag");
 	skybox_program = loadShaders("skybox.vert", "skybox.frag");
 	terrain_program = loadShaders("terrain.vert", "terrain.frag");
-	
+
 	//set frustrum
 	frustum_matrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 1000.0);
-	
+
 	glUseProgram(skybox_program);
-	glUniform1i(glGetUniformLocation(skybox_program, "texUnit"), 0); 
+	glUniform1i(glGetUniformLocation(skybox_program, "texUnit"), 0);
 	glUniformMatrix4fv(glGetUniformLocation(skybox_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 
 	glUseProgram(terrain_program);
@@ -478,7 +478,7 @@ void display(void)
 {
 	vec3 pos = {0,0,0};
 	int i;
-	
+
 	// clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -513,7 +513,7 @@ void display(void)
 		glBindTexture(GL_TEXTURE_2D, tx[i].texID);
 		DrawModel(box[i], skybox_program, "in_Position", 0L, "inTexCoord");
 	}
-	
+
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
@@ -565,7 +565,7 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, dirt_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	draw(1,6,1,pos,t/100,bunny,program);
-	
+
 	//deer
 	scaling = S(0.2,0.2,0.2);
 	pos.x = 3;
@@ -574,7 +574,7 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, deer_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	draw(1,6,1,pos,45,deer,program);
-	
+
 	//bear
 	scaling = S(0.2,0.2,0.2);
 	pos.x = 15;
@@ -583,7 +583,7 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, bear_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	draw(1,6,1,pos,45,bear,program);
-	
+
 	//boar
 	scaling = S(0.2,0.2,0.2);
 	pos.x = 10;
@@ -592,7 +592,7 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, boar_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	draw(1,6,1,pos,45,boar,program);
-	
+
 	//wolf
 	scaling = S(0.2,0.2,0.2);
 	pos.x = 10;
@@ -601,7 +601,7 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, wolf_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	draw(1,6,1,pos,45,wolf,program);
-	
+
 	//bird
 	scaling = S(0.2,0.2,0.2);
 	pos.x = 10;
@@ -610,7 +610,7 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, dirt_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	draw(1,6,15,pos,45,bird,program);
-	
+
 	glutSwapBuffers();
 }
 
@@ -668,27 +668,28 @@ float dot(vec3 v1, vec3 v2)
 void OnTimer(int value)
 {
 
+	vec3 rotated_direction;
+
 	glutTimerFunc(20, &OnTimer, value);
 	glutPostRedisplay();
 
 	vec3 collision_vector;
 	collision_vector = check_collision_objects(COLLISION_DIST);
 
-	float collision_factor;
+	float collision_factor, sideways_factor;
 	if (collision_object)
 	{
-		vec3 rotated_direction = {-direction.z, 0, direction.x};
+		rotated_direction.x = -direction.z;
+		rotated_direction.y = 0;
+		rotated_direction.z = direction.x;
 		rotated_direction = Normalize(rotated_direction);
 		collision_factor = dot(collision_vector, direction);
-		if (dot(rotated_direction,collision_vector) > 0)
-		{
-			collision_factor = 1;
-			collision_object = false;
-		}
+		sideways_factor = dot(collision_vector,rotated_direction);
 	}
 	else
 	{
 		collision_factor = 1;
+		sideways_factor = 1;
 	}
 
 
@@ -701,9 +702,13 @@ void OnTimer(int value)
 	}
 
 
-	printf("x=%f z=%f factor=%f colX=%f colZ=%f\n", direction.x, direction.z, collision_factor, collision_vector.x, collision_vector.z);
-
 	if (glutKeyIsDown('e') && glutKeyIsDown('w')){ // Sprint (Shift)
+		if (dot(rotated_direction,collision_vector) > 0)
+		{
+			collision_factor = 1;
+			sideways_factor = 1;
+			collision_object = false;
+		}
 		if (collision_object)
 		{
 			position.x += direction.x * speed * SPRINT * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
@@ -717,6 +722,12 @@ void OnTimer(int value)
 	}
 
 	if (glutKeyIsDown('w')){ //move camera forward
+		if (dot(rotated_direction,collision_vector) > 0)
+		{
+			collision_factor = 1;
+			sideways_factor = 1;
+			collision_object = false;
+		}
 		if (collision_object)
 		{
 			position.x += direction.x * speed * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
@@ -730,6 +741,12 @@ void OnTimer(int value)
 	}
 
 	if (glutKeyIsDown('s')){ //move camera backwards
+		if (dot(rotated_direction,collision_vector) < 0)
+		{
+			collision_factor = 1;
+			sideways_factor = 1;
+			collision_object = false;
+		}
 		if (collision_object)
 		{
 			position.x -= direction.x * speed * BACKWARDS * sqrt(pow(collision_factor,2)) * sqrt(pow(collision_vector.x,2));
@@ -742,14 +759,42 @@ void OnTimer(int value)
 		}
 	}
 
-	if (glutKeyIsDown('a')){ //rotate camera left around Y axis
-		position.x += direction.z * speed*0.7;
-		position.z -= direction.x * speed*0.7;
+	if (glutKeyIsDown('a')){ // Move left
+		if (dot(direction,collision_vector) > 0)
+		{
+			collision_factor = 1;
+			sideways_factor = 1;
+			collision_object = false;
+		}
+		if (collision_object)
+		{
+			position.x += direction.z * speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z -= direction.x * speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.z,2));
+		}
+		else
+		{
+			position.x += direction.z * speed * SIDEWARDS;
+			position.z -= direction.x * speed * SIDEWARDS;
+		}
 	}
 
-	if (glutKeyIsDown('d')){ //rotate camera right around Y axis< < 0
-		position.x -= direction.z * speed*0.7;
-		position.z += direction.x * speed*0.7;
+	if (glutKeyIsDown('d')){ // Move right
+		if (dot(direction,collision_vector) < 0)
+		{
+			collision_factor = 1;
+			sideways_factor = 1;
+			collision_object = false;
+		}
+		if (collision_object)
+		{
+			position.x -= direction.z * speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.x,2));
+			position.z += direction.x * speed * SIDEWARDS * sqrt(pow(sideways_factor,2)) * sqrt(pow(collision_vector.z,2));
+		}
+		else
+		{
+			position.x -= direction.z * speed * SIDEWARDS;
+			position.z += direction.x * speed * SIDEWARDS;
+		};
 	}
 
 	if (glutKeyIsDown('c')){ // Crouching
@@ -841,12 +886,6 @@ int main(int argc, char *argv[]){
 	jumping = false;
 	n_walls = 0;
 
-	// 4 World limits
-	create_wall(0, -20, 0, 0, -20, 500, 100); // Z Axis from origin
-	create_wall(500, -20, 0, 0, -20, 0, 100); // X Axis from origin
-	create_wall(255, -20, 500, 255, -20, 0, 100); // Z Axis
-	create_wall(0, -20, 255, 500, -20, 255, 100); // X Axis
-
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH);
@@ -856,6 +895,15 @@ int main(int argc, char *argv[]){
 	glutCreateWindow ("Cool 3D World");
 	glutPassiveMotionFunc(mouseMove);
 	init();
+
+
+	printf("TEXWIDTH: %d\n", texWidth);
+	// 4 World limits
+	create_wall(0, -20, 0, 0, -20, texWidth-1, 100); // Z Axis from origin
+	create_wall(texWidth-1, -20, 0, 0, -20, 0, 100); // X Axis from origin
+	create_wall(texWidth-1, -20, texWidth-1, texWidth-1, -20, 0, 100); // Z Axis
+	create_wall(0, -20, texWidth-1, texWidth-1, -20, texWidth-1, 100); // X Axis
+
 	loadTextures(); //for skybox
 	glutTimerFunc(20, &OnTimer, 0);
 	glutMainLoop();
