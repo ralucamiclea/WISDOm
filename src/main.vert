@@ -24,8 +24,4 @@ void main() {
 	vec4 offs = vec4(gl_InstanceID % edge, gl_InstanceID / edge, 0, 0);
 
 	gl_Position = frustum * camera  * translation * rotation * scaling *  vec4(in_Position, 1.0) + offs * distance;
-
-	// Model to View
-	//gl_Position = frustum * camera  * translation * rotation * scaling * vec4(in_Position, 1.0);
-	//gl_Position = frustum * camera  * rotation * translation * vec4(in_Position, 1.0);
 	}
