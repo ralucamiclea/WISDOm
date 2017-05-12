@@ -506,13 +506,30 @@ void init(void)
 	glEnable(GL_DEPTH_TEST);
 }
 
-//DRAW objects as specified
+int jump = 1, flag = 0;
+void jump_animation() {
+	if(!flag)
+    {
+        jump+=1;
+        if(jump>24)
+            flag=1;
+    }
+    if(flag)
+    {
+        jump-=1;
+        if(jump<4)
+            flag=0;
+    }
+}
 
+//DRAW objects as specified
+int check = 0;
 void draw(int edge_val, int distance_offset, int origin_offset, vec3 pos, int rotangle, int rotax, Model *obj, GLuint program, int normal){
 
 	edge = edge_val;
 	int count = 1 * edge;
 	int i;
+
 	translation = T(pos.x, calculateHeight(terrain, pos) + origin_offset, pos.z);
 	
 	if(rotax == 0)
@@ -663,7 +680,9 @@ void display(void)
 	pos.x = 180;
 	pos.y = 0;
 	pos.z = 68;
-	draw(1,6,1,pos,t/200,1,bunny,program,0);
+	jump_animation();
+	draw(1,6,jump/4,pos,45,1,bunny,program,0);
+	
 
 	//deer
 	glBindTexture(GL_TEXTURE_2D, deer_tex);
