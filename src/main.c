@@ -19,7 +19,6 @@
 #define BACKWARDS 0.5f
 #define SIDEWARDS 0.7f
 
-
 // Globals
 vec3 position = {3.0,10.0,3.0};
 vec3 direction = {0.0,0.0,0.0};
@@ -35,15 +34,133 @@ float angle; //angle of rotation for the camera direction
 float horizontalAngle = 0.0;
 float verticalAngle = 0.0;
 
-vec3 posObj; //position of the moving cube
 mat4 frustum_matrix, camera_placement, rotation, translation, scaling, camera_skybox;
-Model *dog, *terrain, *skybox, *octagon, *tree, *bunny;
-GLuint grass_tex, skybox_tex, dog_tex, tree_tex, wood_tex, dirt_tex;
-GLuint skyboxup_tex,skyboxdn_tex, skyboxlf_tex, skyboxrt_tex, skyboxbk_tex, skyboxft_tex;
+Model *dog, *terrain, *octagon, *tree, *bunny;
+GLuint grass_tex, dog_tex, tree_tex, wood_tex, dirt_tex;
+Model *tree2, *ring, *house, *deer, *bear, *boar, *wolf, *bird; 
+GLuint deer_tex, bear_tex, boar_tex, wolf_tex;
 TextureData terrain_tex;
-
 GLuint program, skybox_program, terrain_program; // Reference to shader program
+
+//SKYBOX
+Model *box[6];
+GLfloat vertices[6][6*3] =
+{
+	{ // +x
+		0.5,-0.5,-0.5,		// 1
+		0.5,0.5,-0.5,		// 2
+		0.5,0.5,0.5,		// 6
+		0.5,-0.5,0.5,		// 5
+	},
+	{ // -x
+		-0.5,-0.5,-0.5,		// 0 -0
+		-0.5,-0.5,0.5,		// 4 -1
+		-0.5,0.5,0.5,		// 7 -2
+		-0.5,0.5,-0.5,		// 3 -3
+	},
+	{ // +y
+		0.5,0.5,-0.5,		// 2 -0
+		-0.5,0.5,-0.5,		// 3 -1
+		-0.5,0.5,0.5,		// 7 -2
+		0.5,0.5,0.5,		// 6 -3
+	},
+	{ // -y
+		-0.5,-0.5,-0.5,		// 0
+		0.5,-0.5,-0.5,		// 1
+		0.5,-0.5,0.5,		// 5
+		-0.5,-0.5,0.5		// 4
+	},
+	{ // +z
+		-0.5,-0.5,0.5,		// 4
+		0.5,-0.5,0.5,		// 5
+		0.5,0.5,0.5,		// 6
+		-0.5,0.5,0.5,		// 7
+	},
+	{ // -z
+		-0.5,-0.5,-0.5,	// 0
+		-0.5,0.5,-0.5,		// 3
+		0.5,0.5,-0.5,		// 2
+		0.5,-0.5,-0.5,		// 1
+	}
+};
+
+GLfloat texcoord[6][6*2] =
+{
+	{
+		1.0, 1.0,
+		1.0, 0.0, // left OK
+		0.0, 0.0,
+		0.0, 1.0,
+	},
+	{
+		0.0, 1.0, // right OK
+		1.0, 1.0,
+		1.0, 0.0,
+		0.0, 0.0,
+	},
+	{
+		1.0, 0.0, // top OK
+		0.0, 0.0,
+		0.0, 1.0,
+		1.0, 1.0,
+	},
+	{
+		0.0, 1.0,
+		1.0, 1.0,
+		1.0, 0.0, // bottom
+		0.0, 0.0,
+	},
+	{
+		0.0, 1.0,
+		1.0, 1.0,
+		1.0, 0.0, // back OK
+		0.0, 0.0,
+	},
+	{
+		1.0, 1.0,
+		1.0, 0.0, // front OK
+		0.0, 0.0,
+		0.0, 1.0,
+	}
+};
+GLuint indices[6][6] =
+{
+	{0, 2, 1, 0, 3, 2},
+	{0, 2, 1, 0, 3, 2},
+	{0, 2, 1, 0, 3, 2},
+	{0, 2, 1, 0, 3, 2},
+	{0, 2, 1, 0, 3, 2},
+	{0, 2, 1, 0, 3, 2}
+};
+
+GLuint cubemap;
+
+// Select texture set by setting this constant to 0 or 6
+#define TEXTURE_OFFSET 0
+
+char *textureFileName[12] =
+{
+// 0-5:
+  "../tex/petomavar-skybox/skyrender0004.tga",
+  "../tex/petomavar-skybox/skyrender0001.tga",
+  "../tex/petomavar-skybox/skyrender0003.tga",
+  "../tex/petomavar-skybox/skyrender0006.tga",
+  "../tex/petomavar-skybox/skyrender0002.tga",
+  "../tex/petomavar-skybox/skyrender0005.tga",
+// 6-11
+  "../tex/skybox/left.tga",
+  "../tex/skybox/right.tga",
+  "../tex/skybox/top.tga",
+  "../tex/skybox/bottom.tga",
+  "../tex/skybox/back.tga",
+  "../tex/skybox/front.tga",
+};
+
+TextureData tx[6];
+// END SKYBOX stuff
+
 GLfloat t; //time
+
 float obj_t=0, t_cam=0;
 
 int texWidth=0; //for calculateHeight function
@@ -61,6 +178,44 @@ int n_walls;
 
 struct wall_hitbox walls [1000] = {};
 float test [5] = {0,1};
+
+//LOAD texture
+void loadTextures()
+{
+	int i;
+	
+	glGenTextures(1, &cubemap);	// Generate OpenGL texture IDs
+	glActiveTexture(GL_TEXTURE0); // Just make sure the texture unit match
+	
+	// Note all operations on GL_TEXTURE_CUBE_MAP, not GL_TEXTURE_2D
+	
+	// Load texture data and create ordinary texture objects (for skybox)
+	for (i = 0; i < 6; i++)
+	{
+		printf("Loading texture %s\n", textureFileName[i+TEXTURE_OFFSET]);
+		LoadTGATexture(textureFileName[i+TEXTURE_OFFSET], &tx[i]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	// Load to cube map
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, tx[0].w, tx[0].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[0].imageData);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, tx[1].w, tx[1].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[1].imageData);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, tx[2].w, tx[2].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[2].imageData);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, tx[3].w, tx[3].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[3].imageData);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, tx[4].w, tx[4].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[4].imageData);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, tx[5].w, tx[5].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tx[5].imageData);
+  
+	//	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// MIPMAPPING
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+}
 
 
 //TERRAIN GENERATION function
@@ -116,18 +271,18 @@ Model* GenerateTerrain(TextureData *tex)
 						normalArray[(x + z * tex->width)*3 + 0] = normal.x;
 						normalArray[(x + z * tex->width)*3 + 1] = normal.y;
 						normalArray[(x + z * tex->width)*3 + 2] = normal.z;
-// Texture coordinates. You may want to scale them.
+			// Texture coordinates. You may want to scale them.
 			texCoordArray[(x + z * tex->width)*2 + 0] = x; // (float)x / tex->width;
 			texCoordArray[(x + z * tex->width)*2 + 1] = z; // (float)z / tex->height;
 	}
 	for (x = 0; x < tex->width-1; x++)
 		for (z = 0; z < tex->height-1; z++)
 		{
-		// Triangle 1
+			// Triangle 1
 			indexArray[(x + z * (tex->width-1))*6 + 0] = x + z * tex->width;
 			indexArray[(x + z * (tex->width-1))*6 + 1] = x + (z+1) * tex->width;
 			indexArray[(x + z * (tex->width-1))*6 + 2] = x+1 + z * tex->width;
-		// Triangle 2
+			// Triangle 2
 			indexArray[(x + z * (tex->width-1))*6 + 3] = x+1 + z * tex->width;
 			indexArray[(x + z * (tex->width-1))*6 + 4] = x + (z+1) * tex->width;
 			indexArray[(x + z * (tex->width-1))*6 + 5] = x+1 + (z+1) * tex->width;
@@ -141,7 +296,7 @@ Model* GenerateTerrain(TextureData *tex)
 			vertexArray,
 			normalArray,
 			texCoordArray,
-			NULL,
+			0L,
 			indexArray,
 			vertexCount,
 			triangleCount*3);
@@ -177,7 +332,7 @@ float smoothen(float speed, float smoothing, vec3 posObj, float old_height){
 //INSTANCING function
 void DrawModelInstanced(Model *m, GLuint program, char* vertexVariableName, char* normalVariableName, char* texCoordVariableName, int count)
 {
-	if (m != NULL)
+	if (m != 0L)
 	{
 		GLint loc;
 
@@ -193,7 +348,7 @@ void DrawModelInstanced(Model *m, GLuint program, char* vertexVariableName, char
 		else
 			fprintf(stderr, "DrawModel warning: '%s' not found in shader!\n", vertexVariableName);
 
-		if (normalVariableName!=NULL)
+		if (normalVariableName!=0L)
 		{
 			loc = glGetAttribLocation(program, normalVariableName);
 			if (loc >= 0)
@@ -207,7 +362,7 @@ void DrawModelInstanced(Model *m, GLuint program, char* vertexVariableName, char
 		}
 
 		// VBO for texture coordinate data NEW for 5b
-		if ((m->texCoordArray != NULL)&&(texCoordVariableName != NULL))
+		if ((m->texCoordArray != 0L)&&(texCoordVariableName != 0L))
 		{
 			loc = glGetAttribLocation(program, texCoordVariableName);
 			if (loc >= 0)
@@ -224,36 +379,50 @@ void DrawModelInstanced(Model *m, GLuint program, char* vertexVariableName, char
 	}
 }
 
+
 void init(void)
 {
+	int i;
+	
 	//load textures
 	LoadTGATextureData("../tex/fft-terrain.tga", &terrain_tex);
 	terrain = GenerateTerrain(&terrain_tex);
 	LoadTGATextureSimple("../tex/grass.tga", &grass_tex);
-
-	LoadTGATextureSimple("../tex/skybox.tga", &skybox_tex);
-	LoadTGATextureSimple("../tex/niceday2up.tga", &skyboxup_tex);
-	LoadTGATextureSimple("../tex/niceday2dn.tga", &skyboxdn_tex);
-	LoadTGATextureSimple("../tex/niceday2lf.tga", &skyboxlf_tex);
-	LoadTGATextureSimple("../tex/niceday2rt.tga", &skyboxrt_tex);
-	LoadTGATextureSimple("../tex/niceday2ft.tga", &skyboxft_tex);
-	LoadTGATextureSimple("../tex/niceday2bk.tga", &skyboxbk_tex);
-
 	LoadTGATextureSimple("../tex/dog.tga", &dog_tex);
 	LoadTGATextureSimple("../tex/greenleaves.tga", &tree_tex);
 	LoadTGATextureSimple("../tex/woodplanks.tga", &wood_tex);
 	LoadTGATextureSimple("../tex/dirt.tga", &dirt_tex);
+	LoadTGATextureSimple("../tex/deer.tga", &deer_tex);
+	LoadTGATextureSimple("../tex/bear.tga", &bear_tex);
+	LoadTGATextureSimple("../tex/boar.tga", &boar_tex);
+	LoadTGATextureSimple("../tex/wolf.tga", &wolf_tex);
 
-	//load objects
+	//load skybox
+	for (i = 0; i < 6; i++)
+	{
+		box[i] = LoadDataToModel(
+			vertices[i],
+			0L,
+			texcoord[i],
+			0L,
+			indices[i],
+			4,
+			6);
+	}
+	//load other objects
 	dog = LoadModelPlus("../obj/dog.obj");
-
-	//skybox = LoadModelPlus("../obj/skybox1.obj");
-	skybox = LoadModelPlus("../obj/skybox.obj");
-
-	octagon = LoadModelPlus("../obj/octagon.obj"); //moving cube
+	octagon = LoadModelPlus("../obj/octagon.obj");
 	tree = LoadModelPlus("../obj/nicetree.obj");
 	bunny = LoadModelPlus("../obj/bunny.obj");
-
+	tree2 = LoadModelPlus("../obj/tree.obj");
+	ring = LoadModelPlus("../obj/tree.obj");	
+	house = LoadModelPlus("../obj/tree.obj");
+	deer = LoadModelPlus("../obj/deer-obj.obj");
+	bear = LoadModelPlus("../obj/bear-obj.obj");
+	boar = LoadModelPlus("../obj/boar-obj.obj");
+	wolf = LoadModelPlus("../obj/wolf-obj.obj");
+	bird = LoadModelPlus("../obj/bird.obj");
+	
 	dumpInfo();
 
 	// GL inits
@@ -267,11 +436,12 @@ void init(void)
 	program = loadShaders("main.vert", "main.frag");
 	skybox_program = loadShaders("skybox.vert", "skybox.frag");
 	terrain_program = loadShaders("terrain.vert", "terrain.frag");
-
+	
 	//set frustrum
 	frustum_matrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 1000.0);
-
+	
 	glUseProgram(skybox_program);
+	glUniform1i(glGetUniformLocation(skybox_program, "texUnit"), 0); 
 	glUniformMatrix4fv(glGetUniformLocation(skybox_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 
 	glUseProgram(terrain_program);
@@ -280,6 +450,7 @@ void init(void)
 	glUseProgram(program);
 	glUniformMatrix4fv(glGetUniformLocation(program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 
+	glEnable(GL_DEPTH_TEST);
 }
 
 //DRAW objects as specified
@@ -306,6 +477,13 @@ void draw(int edge_val, int distance_offset, int origin_offset, vec3 pos, int ro
 void display(void)
 {
 	vec3 pos = {0,0,0};
+	int i;
+	
+	// clear the screen
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	//get the time
+	t = (GLfloat)glutGet(GLUT_ELAPSED_TIME);
 
 	//set up the camera
 	right = SetVector(sin(horizontalAngle-3.14/2.0), 0, cos(horizontalAngle-3.14/2.0));
@@ -313,17 +491,11 @@ void display(void)
 
 	camera_placement = lookAt(position.x, position.y, position.z, position.x + direction.x, position.y + direction.y, position.z + direction.z, 0, 1, 0);
 
-	// clear the screen
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//get the time
-	t = (GLfloat)glutGet(GLUT_ELAPSED_TIME);
-
 	//draw skybox
 	printError("skybox");
 	glUseProgram(skybox_program);
 	glDisable(GL_DEPTH_TEST);
-	//glDisable(GL_CULL_FACE);
+	glDisable(GL_CULL_FACE);
 
 	camera_skybox = lookAt(position.x, position.y, position.z, position.x + direction.x, position.y + direction.y, position.z + direction.z, 0, 1, 0);
 	camera_skybox.m[3]=0;
@@ -336,19 +508,18 @@ void display(void)
 	glUniformMatrix4fv(glGetUniformLocation(skybox_program, "translation"), 1, GL_TRUE, translation.m);
 
 	//skybox texture
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, skybox_tex);
-	glUniform1i(glGetUniformLocation(skybox_program, "texUnit1"), 1);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, dirt_tex);
-	glUniform1i(glGetUniformLocation(skybox_program, "texUnit2"), 0);
-
-	DrawModel(skybox, skybox_program, "in_Position", 0L, "inTexCoord");
-
+	for (i = 0; i < 6; i++)
+	{
+		glBindTexture(GL_TEXTURE_2D, tx[i].texID);
+		DrawModel(box[i], skybox_program, "in_Position", 0L, "inTexCoord");
+	}
+	
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_CULL_FACE);
-	//glCullFace(GL_BACK);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+	// Binding again just to be sure the texture unit match
+	glActiveTexture(GL_TEXTURE0);
 
 	//draw terrain
 	glUseProgram(terrain_program);
@@ -358,7 +529,6 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, grass_tex);
 	glUniform1i(glGetUniformLocation(terrain_program, "texUnit"), 0);
 	DrawModel(terrain, terrain_program, "in_Position", "in_Normal", "inTexCoord");
-
 
 	//draw objects
 	glUseProgram(program);
@@ -380,12 +550,12 @@ void display(void)
 	pos.z = 200;
 	glBindTexture(GL_TEXTURE_2D, tree_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	draw(3,55,0,pos,0,tree,program);
+	draw(3,55,-1,pos,0,tree,program);
 	pos.z = 150;
-	draw(4,35,0,pos,45,tree,program);
+	draw(4,35,-1,pos,45,tree,program);
 	pos.z = 80;
 	scaling = S(0.03,0.03,0.03);
-	draw(2,75,0,pos,90,tree,program);
+	draw(2,75,-1,pos,90,tree,program);
 
 	//bunny
 	scaling = S(2,2,2);
@@ -395,10 +565,54 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, dirt_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	draw(1,6,1,pos,t/100,bunny,program);
-
+	
+	//deer
+	scaling = S(0.2,0.2,0.2);
+	pos.x = 3;
+	pos.y = 0;
+	pos.z = 10;
+	glBindTexture(GL_TEXTURE_2D, deer_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	draw(1,6,1,pos,45,deer,program);
+	
+	//bear
+	scaling = S(0.2,0.2,0.2);
+	pos.x = 15;
+	pos.y = 0;
+	pos.z = 10;
+	glBindTexture(GL_TEXTURE_2D, bear_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	draw(1,6,1,pos,45,bear,program);
+	
+	//boar
+	scaling = S(0.2,0.2,0.2);
+	pos.x = 10;
+	pos.y = 0;
+	pos.z = 4;
+	glBindTexture(GL_TEXTURE_2D, boar_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	draw(1,6,1,pos,45,boar,program);
+	
+	//wolf
+	scaling = S(0.2,0.2,0.2);
+	pos.x = 10;
+	pos.y = 0;
+	pos.z = 10;
+	glBindTexture(GL_TEXTURE_2D, wolf_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	draw(1,6,1,pos,45,wolf,program);
+	
+	//bird
+	scaling = S(0.2,0.2,0.2);
+	pos.x = 10;
+	pos.y = 0;
+	pos.z = 10;
+	glBindTexture(GL_TEXTURE_2D, dirt_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	draw(1,6,15,pos,45,bird,program);
+	
 	glutSwapBuffers();
 }
-
 
 vec3 check_collision_objects(float dist)
 {
@@ -642,6 +856,7 @@ int main(int argc, char *argv[]){
 	glutCreateWindow ("Cool 3D World");
 	glutPassiveMotionFunc(mouseMove);
 	init();
+	loadTextures(); //for skybox
 	glutTimerFunc(20, &OnTimer, 0);
 	glutMainLoop();
 	return 0;
