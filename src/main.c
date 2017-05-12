@@ -21,6 +21,9 @@
 #define PLAYER_HEIGHT 0.8f
 #define PLAYER_SPEED 0.2f
 
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
+
 // Globals
 vec3 position = {3.0,10.0,3.0};
 vec3 direction = {0.0,0.0,0.0};
@@ -176,11 +179,17 @@ struct wall_hitbox {
 	float height;
 };
 
-int n_walls;
+struct ground_hitbox {
+	float vertices [4];
+	float height;
+};
+
+int n_walls, n_grounds;
 
 
 struct wall_hitbox walls [1000] = {};
-float test [5] = {0,1};
+struct ground_hitbox grounds [1000] = {};
+
 
 //LOAD texture
 void loadTextures()
@@ -309,10 +318,20 @@ Model* GenerateTerrain(TextureData *tex)
 
 //HEIGHT function
 GLfloat calculateHeight(Model *groundMap, vec3 position){
-
-	GLfloat height = 0;
-	height = groundMap->vertexArray[((int)position.x + (int)position.z * texWidth)*3 + 1];
-	return height;
+	int i;
+	for (i = 0; i < n_grounds; i++)
+	{
+		float x1 = grounds[i].vertices[0];
+		float z1 = grounds[i].vertices[1];
+		float x2 = grounds[i].vertices[2];
+		float z2 = grounds[i].vertices[3];
+		float height = grounds[i].height;
+		if ((position.x > MIN(x1, x2) && (position.x < MAX(x1, x2)))&&(position.z > MIN(z1, z2) && position.z < MAX(z1, z2)))
+		{
+				return height;
+		}
+	}
+	return groundMap->vertexArray[((int)position.x + (int)position.z * texWidth)*3 + 1];
 }
 
 //SMOOTH Movement
@@ -879,6 +898,18 @@ void create_wall(float a, float b, float c, float d, float e, float f, float hei
 	n_walls++;
 }
 
+void create_ground(float x1, float z1, float x2, float z2, float height)
+{
+	struct ground_hitbox ground1;
+	ground1.vertices[0] = x1;
+	ground1.vertices[1] = z1;
+	ground1.vertices[2] = x2;
+	ground1.vertices[3] = z2;
+	ground1.height = height;
+	grounds[n_grounds] = ground1;
+	n_grounds++;
+}
+
 int main(int argc, char *argv[]){
 	time_air = 0;
 	collision_ground = false;
@@ -896,13 +927,13 @@ int main(int argc, char *argv[]){
 	glutPassiveMotionFunc(mouseMove);
 	init();
 
-
-	printf("TEXWIDTH: %d\n", texWidth);
 	// 4 World limits
 	create_wall(0, -20, 0, 0, -20, texWidth-1, 100); // Z Axis from origin
 	create_wall(texWidth-1, -20, 0, 0, -20, 0, 100); // X Axis from origin
 	create_wall(texWidth-1, -20, texWidth-1, texWidth-1, -20, 0, 100); // Z Axis
 	create_wall(0, -20, texWidth-1, texWidth-1, -20, texWidth-1, 100); // X Axis
+
+	create_ground(5, 5, 10, 10, 2);
 
 	loadTextures(); //for skybox
 	glutTimerFunc(20, &OnTimer, 0);
