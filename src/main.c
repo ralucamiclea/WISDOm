@@ -30,6 +30,9 @@
 #define NOCLIP false
 #define SUPER_SPRINT true
 
+#define MAP_SIZE 1024                
+#define TEP_SIZE 16 
+
 
 
 // Globals
@@ -49,11 +52,18 @@ float horizontalAngle = 0.0;
 float verticalAngle = 0.0;
 
 mat4 frustum_matrix, camera_placement, rotation, translation, scaling, camera_skybox;
-Model *dog, *terrain, *octagon, *tree, *bunny;
-GLuint grass_tex, dog_tex, tree_tex, wood_tex, dirt_tex, particle_tex;
-Model *tree2, *ring, *house, *deer, *bear, *boar, *wolf, *bird;
-GLuint deer_tex, bear_tex, boar_tex, wolf_tex;
+
+Model *terrain, *tree, *lotus, *rose, *cartoontree, *ocean;
+GLuint grass_tex, leaves_tex, wood_tex, lotus_tex;
+
+Model *ring, *cube, *house, *hangars, *rock, *stone, *stone2, *stonewall;
+GLuint dirt_tex, particle_tex, stone_tex, rock_tex;
+
+Model *dog, *bunny, *deer, *bear, *boar, *wolf, *ant;
+GLuint dog_tex, deer_tex, bear_tex, boar_tex, wolf_tex;
+
 TextureData terrain_tex;
+GLuint map;
 GLuint program, skybox_program, terrain_program, prize_program, particle_program; // Reference to shader program
 
 //LIGHT sources
@@ -250,7 +260,6 @@ void loadTextures()
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 }
-
 
 //TERRAIN GENERATION function
 Model* GenerateTerrain(TextureData *tex)
@@ -469,9 +478,6 @@ void init_billboarding(void){
 
 
 	printError("init arrays");
-
-
-
 }
 
 int particle_count = 5;
@@ -514,12 +520,17 @@ void init(void)
 
 	//load textures
 	LoadTGATextureData("../tex/fft-terrain.tga", &terrain_tex);
+	LoadTGATextureSimple("map.tga", &map);
 	terrain = GenerateTerrain(&terrain_tex);
 	LoadTGATextureSimple("../tex/grass.tga", &grass_tex);
-	LoadTGATextureSimple("../tex/dog.tga", &dog_tex);
-	LoadTGATextureSimple("../tex/greenleaves.tga", &tree_tex);
+	LoadTGATextureSimple("../tex/greenleaves.tga", &leaves_tex);
 	LoadTGATextureSimple("../tex/woodplanks.tga", &wood_tex);
 	LoadTGATextureSimple("../tex/dirt.tga", &dirt_tex);
+	LoadTGATextureSimple("../tex/stone.tga", &stone_tex);
+	LoadTGATextureSimple("../tex/rock1.tga", &rock_tex);
+	LoadTGATextureSimple("../tex/lotus.tga", &lotus_tex);
+	
+	LoadTGATextureSimple("../tex/dog.tga", &dog_tex);
 	LoadTGATextureSimple("../tex/deer.tga", &deer_tex);
 	LoadTGATextureSimple("../tex/bear.tga", &bear_tex);
 	LoadTGATextureSimple("../tex/boar.tga", &boar_tex);
@@ -538,19 +549,28 @@ void init(void)
 			6);
 	}
 	//load other objects
+	ring = LoadModelPlus("../obj/ring.obj");
+	cube = LoadModelPlus("../obj/cubeplus.obj");
+	house = LoadModelPlus("../obj/house.obj");
+	hangars = LoadModelPlus("../obj/house.obj");
+	rock = LoadModelPlus("../obj/house.obj");
+	stone2 = LoadModelPlus("../obj/house.obj");
+	stonewall = LoadModelPlus("../obj/house.obj");
+	
+	tree = LoadModelPlus("../obj/tree.obj");
+	lotus = LoadModelPlus("../obj/lotus.obj");
+	rose = LoadModelPlus("../obj/rose.obj");
+	cartoontree = LoadModelPlus("../obj/cartoontree.obj");
+	ocean = LoadModelPlus("../obj/ocean.obj");
+	
 	dog = LoadModelPlus("../obj/dog.obj");
-	octagon = LoadModelPlus("../obj/octagon.obj");
-	tree = LoadModelPlus("../obj/nicetree.obj");
 	bunny = LoadModelPlus("../obj/bunny.obj");
-	tree2 = LoadModelPlus("../obj/tree.obj");
-	ring = LoadModelPlus("../obj/tree.obj");
-	house = LoadModelPlus("../obj/tree.obj");
 	deer = LoadModelPlus("../obj/deer-obj.obj");
 	bear = LoadModelPlus("../obj/bear-obj.obj");
 	boar = LoadModelPlus("../obj/boar-obj.obj");
 	wolf = LoadModelPlus("../obj/wolf-obj.obj");
-	bird = LoadModelPlus("../obj/bird.obj");
-	ring = LoadModelPlus("../obj/ring.obj");
+	ant = LoadModelPlus("../obj/ant.obj");
+	
 
 	dumpInfo();
 
@@ -644,7 +664,7 @@ void draw(int edge_val, int distance_offset, int origin_offset, vec3 pos, int ro
 void display(void)
 {
 	vec3 pos = {0,0,0};
-	int i;
+	int i, j;
 
 	// clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -695,10 +715,24 @@ void display(void)
 	translation = T(0,0,0);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "translation"), 1, GL_TRUE, translation.m);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "camera"), 1, GL_TRUE, camera_placement.m);
+	
+	// Bind to texture units
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, grass_tex);
-	glUniform1i(glGetUniformLocation(terrain_program, "texUnit"), 0);
+	glUniform1i(glGetUniformLocation(terrain_program, "grass"), 0);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, lotus_tex);
+	glUniform1i(glGetUniformLocation(terrain_program, "water"), 1);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, dirt_tex);
+	glUniform1i(glGetUniformLocation(terrain_program, "dirt"), 2);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, map);
+	glUniform1i(glGetUniformLocation(terrain_program, "map"), 3);
+	
 	DrawModel(terrain, terrain_program, "in_Position", "in_Normal", "inTexCoord");
 
+	glActiveTexture(GL_TEXTURE0); 
 
 	//draw reward
 	printError("reward");
@@ -744,7 +778,7 @@ void display(void)
 	draw(2,6,0,pos,60,1,dog,program,0);
 
 	//trees
-	glBindTexture(GL_TEXTURE_2D, tree_tex);
+	glBindTexture(GL_TEXTURE_2D, leaves_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	scaling = S(0.05,0.05,0.05);
 	pos.x = 200;
@@ -804,9 +838,18 @@ void display(void)
 	pos.y = 0;
 	pos.z = 10;
 	draw(1,6,1,pos,45,1,wolf,program,0);
+	
+	//lotus
+	glBindTexture(GL_TEXTURE_2D, lotus_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	scaling = S(1,1,1);
+	pos.x = 100;
+	pos.y = 0;
+	pos.z = 65;
+	draw(1,6,1,pos,t/100,1,lotus,program,0);
 
 	glUseProgram(particle_program);
-	display_billboarding();
+	//display_billboarding();
 
 	glutSwapBuffers();
 }
@@ -864,7 +907,6 @@ float dot(vec3 v1, vec3 v2)
 //CONTROLS
 void OnTimer(int value)
 {
-
 	if (METRICS)
 	{
 		printf("position :(%f, %f, %f)\n", position.x, position.y, position.z);
@@ -1135,6 +1177,7 @@ int main(int argc, char *argv[]){
 
 
 	loadTextures(); //for skybox
+	
 	glutTimerFunc(20, &OnTimer, 0);
 	glutMainLoop();
 	return 0;

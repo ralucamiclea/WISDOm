@@ -4,6 +4,7 @@ in  vec3 in_Position;
 in  vec3 in_Normal;
 in vec2 inTexCoord;
 
+
 out vec2 texCoord;
 out vec3 exColor;
 
