@@ -50,11 +50,11 @@ float verticalAngle = 0.0;
 
 mat4 frustum_matrix, camera_placement, rotation, translation, scaling, camera_skybox;
 Model *dog, *terrain, *octagon, *tree, *bunny;
-GLuint grass_tex, dog_tex, tree_tex, wood_tex, dirt_tex;
+GLuint grass_tex, dog_tex, tree_tex, wood_tex, dirt_tex, particle_tex;
 Model *tree2, *ring, *house, *deer, *bear, *boar, *wolf, *bird;
 GLuint deer_tex, bear_tex, boar_tex, wolf_tex;
 TextureData terrain_tex;
-GLuint program, skybox_program, terrain_program, prize_program; // Reference to shader program
+GLuint program, skybox_program, terrain_program, prize_program, particle_program; // Reference to shader program
 
 //LIGHT sources
 Point3D lightSourcesColorsArr[] = { {1.0f, 0.0f, 0.0f}, // Red light
@@ -427,6 +427,86 @@ void DrawModelInstanced(Model *m, GLuint program, char* vertexVariableName, char
 	}
 }
 
+unsigned int vertexArrayObjID; //use as input to the display_billboarding
+void init_billboarding(void){
+
+	GLfloat vertices[] = {	-0.5f,-0.5f,0.0f,
+						-0.5f,0.5f,0.0f,
+						0.5f,-0.5f,0.0f };
+
+	// two vertex buffer objects, used for uploading the
+	unsigned int vertexBufferObjID;
+
+	// GL inits
+	glDisable(GL_DEPTH_TEST);
+	printError("GL inits");
+
+
+	// Load and compile shader
+	particle_program = loadShaders("instancing.vert", "instancing.frag");
+	glUseProgram(particle_program);
+	printError("init shader");
+
+	// Upload geometry to the GPU:
+
+	// Allocate and activate Vertex Array Object
+	glGenVertexArrays(1, &vertexArrayObjID);
+	glBindVertexArray(vertexArrayObjID);
+	// Allocate Vertex Buffer Objects
+	glGenBuffers(1, &vertexBufferObjID);
+
+	// VBO for vertex data
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjID);
+	glBufferData(GL_ARRAY_BUFFER, 9*sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(glGetAttribLocation(particle_program, "in_Position"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(glGetAttribLocation(particle_program, "in_Position"));
+
+	// End of upload of geometry
+
+	LoadTGATextureSimple("../tex/particles/star.tga", &particle_tex);
+	glBindTexture(GL_TEXTURE_2D, particle_tex);
+	glUniform1i(glGetUniformLocation(particle_program, "tex"), 0); // Texture unit 0
+
+
+	printError("init arrays");
+
+
+
+}
+
+int particle_count = 5;
+float particle_slope = 0;
+GLfloat particle_a=0.5;
+void display_billboarding(void){
+	glUseProgram(particle_program);
+	//put in displaz billboarding function
+	// clear the screen
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	particle_a += 0.1;
+	mat4 rot, trans, total;
+
+// The angle will be affected by the instance number so we pass the angle instead of  matrix.
+	trans = T(sin(particle_a)/2, 0, 0);
+	glUniformMatrix4fv(glGetUniformLocation(particle_program, "translation"), 1, GL_TRUE, trans.m);
+	glUniform1f(glGetUniformLocation(particle_program, "angle"), particle_a);
+	glUniform1f(glGetUniformLocation(particle_program, "slope"), particle_slope);
+
+	glBindVertexArray(vertexArrayObjID);	// Select VAO
+	glBindTexture(GL_TEXTURE_2D, particle_tex);
+// Draw the triangle 10 times!
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 3, particle_count);
+// instead of the usual
+//	glDrawArrays(GL_TRIANGLES, 0, 3);	// draw object
+
+	//put in displaz billboarding function
+	glDisable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+}
 
 void init(void)
 {
@@ -477,8 +557,10 @@ void init(void)
 	// GL inits
 	glClearColor(0.2,0.2,0.6,0);
 	glutInitDisplayMode(GLUT_DEPTH);
-	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
+	init_billboarding();
+
+	glDisable(GL_CULL_FACE);
 	printError("GL inits");
 
 	// Load and compile shader
@@ -496,12 +578,15 @@ void init(void)
 
 	glUseProgram(terrain_program);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
-	
+
 	glUseProgram(prize_program);
 	glUniformMatrix4fv(glGetUniformLocation(prize_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 
 	glUseProgram(program);
 	glUniformMatrix4fv(glGetUniformLocation(program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
+
+	glUseProgram(particle_program);
+	glUniformMatrix4fv(glGetUniformLocation(particle_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 
 	glEnable(GL_DEPTH_TEST);
 }
@@ -531,7 +616,7 @@ void draw(int edge_val, int distance_offset, int origin_offset, vec3 pos, int ro
 	int i;
 
 	translation = T(pos.x, calculateHeight(terrain, pos) + origin_offset, pos.z);
-	
+
 	if(rotax == 0)
 		rotation = Rx(rotangle);
 	if(rotax == 1)
@@ -553,7 +638,7 @@ void draw(int edge_val, int distance_offset, int origin_offset, vec3 pos, int ro
 	}
 	else {
 		DrawModelInstanced(obj, program, "in_Position", 0L, "inTexCoord", count);
-	}		
+	}
 }
 
 void display(void)
@@ -613,8 +698,8 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, grass_tex);
 	glUniform1i(glGetUniformLocation(terrain_program, "texUnit"), 0);
 	DrawModel(terrain, terrain_program, "in_Position", "in_Normal", "inTexCoord");
-	
-	
+
+
 	//draw reward
 	printError("reward");
 	glUseProgram(prize_program);
@@ -682,7 +767,7 @@ void display(void)
 	pos.z = 68;
 	jump_animation();
 	draw(1,6,jump/4,pos,45,1,bunny,program,0);
-	
+
 
 	//deer
 	glBindTexture(GL_TEXTURE_2D, deer_tex);
@@ -719,6 +804,9 @@ void display(void)
 	pos.y = 0;
 	pos.z = 10;
 	draw(1,6,1,pos,45,1,wolf,program,0);
+
+	glUseProgram(particle_program);
+	display_billboarding();
 
 	glutSwapBuffers();
 }
