@@ -922,9 +922,10 @@ int check_collision_checkpoint()
 	for (i = 0; i < n_checkpoints; i++)
 	{
 		bool taken = checkpoints[i].taken;
-		float cx = checkpoints[i].origin[0];
-		float cy = checkpoints[i].origin[1];
-		float cz = checkpoints[i].origin[2];
+		vec3 pos = {checkpoints[i].origin[0],checkpoints[i].origin[1], checkpoints[i].origin[2]};
+		float cx = pos.x;
+		float cy = pos.y + calculateHeight(terrain,pos);
+		float cz = pos.z;
 		if (!taken)
 		{
 			if ((position.x > cx - CHECKPOINT_SIZE) && (position.x < cx + CHECKPOINT_SIZE) && (position.z > cz - CHECKPOINT_SIZE && position.z < cz + CHECKPOINT_SIZE))
