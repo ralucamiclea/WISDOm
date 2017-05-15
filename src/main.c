@@ -42,6 +42,22 @@ vec3 direction = {0.0,0.0,0.0};
 vec3 right = {0.0,0.0,0.0};
 vec3 up = {0.0,0.0,0.0};
 
+static float tree_pos [] = {200,60,190,65,190,68,210,50,200,55,190,60,175,68,165,70,170,50,175,55,175,57,200,53,210,60,170,50,180,40,190,35,190,80}; //pos.x and pos.z
+static float tree_info [] = {0.01,0,0.01,1,0.01,2, 0.02, 1,0.02,0,0.02,1, 0.02,2,0.01,2.5,0.01,2.5,0.01,0,0.01,1,0.01,2,0.01,1, 0.02, 2.5, 0.02, 2.5, 0.02, 2.5, 0.02, 1}; //scale and rotation angle
+#define TREES_AMOUNT 17
+
+static float dog_pos [] = {100,190,80,200,85,205}; //pos.x and pos.z
+static float dog_info [] = {0.045,1,0.05,0,0.05,2}; //scale and rotation angle
+#define DOGS_AMOUNT 3
+
+static float bunny_pos [] = {200,50,185,65,170,65,175,60,180,46}; //pos.x and pos.z
+static float bunny_info [] = {80,0,90,2,5,1,100,3,5,2.5}; //jump rate and rotation angle
+#define BUNNY_AMOUNT 5
+
+static float wolf_pos [] = {70,100,75,90}; //pos.x and pos.z
+static float wolf_info [] = {0.45,1,0.4,0}; //scale and rotation angle
+#define WOLF_AMOUNT 2
+
 static float checkpoints_positions [] = {87,90,93,195,163,180,8,90,195,44,241,120,241,15};
 #define CHECKPOINT_AMOUNT 7
 
@@ -66,8 +82,8 @@ GLuint grass_tex, leaves_tex, wood_tex, lotus_tex, water_tex;
 Model *ring, *cube, *house, *hangars, *rock, *stone, *stone2, *stonewall;
 GLuint dirt_tex, particle_tex, stone_tex, rock_tex;
 
-Model *dog, *bunny, *deer, *bear, *boar, *wolf, *ant;
-GLuint dog_tex, deer_tex, bear_tex, boar_tex, wolf_tex, fur_tex;
+Model *dog, *bunny, *wolf, *ant;
+GLuint dog_tex, wolf_tex, fur_tex;
 
 TextureData terrain_tex;
 GLuint map;
@@ -547,9 +563,6 @@ void init(void)
 	LoadTGATextureSimple("../tex/ocean.tga", &water_tex);
 
 	LoadTGATextureSimple("../tex/dog.tga", &dog_tex);
-	LoadTGATextureSimple("../tex/dogfur.tga", &deer_tex);
-	LoadTGATextureSimple("../tex/bear.tga", &bear_tex);
-	LoadTGATextureSimple("../tex/boar.tga", &boar_tex);
 	LoadTGATextureSimple("../tex/wolf.tga", &wolf_tex);
 	LoadTGATextureSimple("../tex/fur.tga", &fur_tex);
 
@@ -583,9 +596,6 @@ void init(void)
 
 	dog = LoadModelPlus("../obj/dog.obj");
 	bunny = LoadModelPlus("../obj/bunny.obj");
-	deer = LoadModelPlus("../obj/deer-obj.obj");
-	bear = LoadModelPlus("../obj/bear-obj.obj");
-	boar = LoadModelPlus("../obj/boar-obj.obj");
 	wolf = LoadModelPlus("../obj/wolf-obj.obj");
 	ant = LoadModelPlus("../obj/ant.obj");
 
@@ -640,7 +650,7 @@ void jump_animation() {
     if(flag)
     {
         jump-=1;
-        if(jump<4)
+        if(jump<6)
             flag=0;
     }
 }
@@ -767,13 +777,12 @@ void display(void)
 	glUniform1iv(glGetUniformLocation(prize_program, "isDirectional"), 4, isDirectional);
 
 	scaling = S(2,2,2);
-	int cid;
-	for (cid = 0; cid < CHECKPOINT_AMOUNT; cid++)
+	for (i = 0; i < CHECKPOINT_AMOUNT; i++)
 	{
-			if (checkpoints_display[cid]) {
-				pos.x = checkpoints_positions[2*cid];
+			if (checkpoints_display[i]) {
+				pos.x = checkpoints_positions[2*i];
 				pos.y = 0;
-				pos.z = checkpoints_positions[2*cid+1];
+				pos.z = checkpoints_positions[2*i+1];
 				draw(1,0,6.5,pos,t/100,0,ring,prize_program,1);
 			}
 	}
@@ -789,12 +798,16 @@ void display(void)
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, dog_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
-	scaling = S(0.05,0.05,0.05);
-	pos.x = 80;
-	pos.y = 0;
-	pos.z = 250;
-	draw(2,6,0,pos,60,1,dog,program,0);
+	for (i = 0; i < DOGS_AMOUNT * 2; i+=2)
+	{
+		pos.x = dog_pos[i];
+		pos.y = 0;
+		pos.z = dog_pos[i+1];
+		scaling = S(dog_info[i],dog_info[i],dog_info[i]);
+		draw(1,6,0,pos,dog_info[i+1],1,dog,program,0);		
+	}
 
+	
 	//trees
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, leaves_tex);
@@ -802,63 +815,15 @@ void display(void)
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, leaves_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
-	scaling = S(0.01,0.01,0.01);
-	pos.x = 200;
-	pos.y = 0;
-	pos.z = 60;
-	draw(1,55,-1,pos,0,1,tree,program,0);
-	pos.x = 190;
-	pos.z = 65;
-	draw(1,35,-1,pos,1,1,tree,program,0);
-	pos.z = 68;
-	draw(1,75,-1,pos,2,1,tree,program,0);
-	pos.x = 210;
-	pos.z = 50;
-	scaling = S(0.02,0.02,0.02);
-	draw(1,75,-1,pos,2.5,1,tree,program,0);
-	pos.x = 200;
-	pos.z = 55;
-	draw(1,55,-1,pos,0,1,tree,program,0);
-	pos.x = 190;
-	pos.z = 60;
-	draw(1,35,-1,pos,1,1,tree,program,0);
-	pos.x = 175;
-	pos.z = 68;
-	draw(1,75,-1,pos,2,1,tree,program,0);
-	pos.x = 165;
-	pos.z = 70;
-	scaling = S(0.01,0.01,0.01);
-	draw(1,75,-1,pos,2.5,1,tree,program,0);
-	pos.x = 170;
-	pos.z = 50;
-	draw(1,75,-1,pos,2.5,1,tree,program,0);
-	pos.x = 175;
-	pos.z = 55;
-	draw(1,55,-1,pos,0,1,tree,program,0);
-	pos.x = 175;
-	pos.z = 57;
-	draw(1,35,-1,pos,1,1,tree,program,0);
-	pos.x = 200;
-	pos.z = 53;
-	draw(1,75,-1,pos,2,1,tree,program,0);
-	pos.x = 210;
-	pos.z = 60;
-	scaling = S(0.01,0.01,0.01);
-	draw(1,75,-1,pos,2.5,1,tree,program,0);
-	scaling = S(0.02,0.02,0.02);
-	pos.x = 170;
-	pos.z = 50;
-	draw(1,75,-1,pos,2.5,1,tree,program,0);
-	pos.x = 180;
-	pos.z = 40;
-	draw(1,75,-1,pos,2.5,1,tree,program,0);
-	pos.x = 190;
-	pos.z = 35;
-	draw(1,55,-1,pos,0,1,tree,program,0);
-	pos.x = 190;
-	pos.z = 80;
-	draw(1,35,-1,pos,1,1,tree,program,0);
-	
+	for (i = 0; i < TREES_AMOUNT * 2; i+=2)
+	{
+		pos.x = tree_pos[i];
+		pos.y = 0;
+		pos.z = tree_pos[i+1];
+		scaling = S(tree_info[i],tree_info[i],tree_info[i]);
+		draw(1,55,-1,pos,tree_info[i+1],1,tree,program,0);		
+	}
+
 	//bunny
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, fur_tex);
@@ -867,23 +832,15 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, dirt_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
 	scaling = S(2,2,2);
-	pos.x = 180;
-	pos.y = 0;
-	pos.z = 68;
-	draw(1,6,jump/4,pos,0,1,bunny,program,0);
-	pos.x = 189;
-	pos.y = 0;
-	pos.z = 60;
-	draw(1,6,jump/3,pos,2,1,bunny,program,0);
-	pos.x = 170;
-	pos.y = 0;
-	pos.z = 65;
-	draw(1,8,jump/5,pos,1,1,bunny,program,0);
-	pos.x = 175;
-	pos.y = 0;
-	pos.z = 60;
-	draw(1,7,jump/4,pos,3,1,bunny,program,0);
+	for (i = 0; i < BUNNY_AMOUNT * 2; i+=2)
+	{
+		pos.x = bunny_pos[i];
+		pos.y = 0;
+		pos.z = bunny_pos[i+1];
+		draw(1,6,1+jump/bunny_info[i],pos,bunny_info[i+1],1,bunny,program,0);
+	}
 	jump_animation();
+	
 
 	//lotus
 	glActiveTexture(GL_TEXTURE4);
@@ -893,12 +850,11 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, lotus_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
 	scaling = S(0.3,0.3,0.3);
-	int lid;
-	for (lid = 0; lid < LOTUS_AMOUNT; lid++)
+	for (i = 0; i < LOTUS_AMOUNT; i++)
 	{
-		pos.x = lotus_positions[2*lid];
+		pos.x = lotus_positions[2*i];
 		pos.y = 0;
-		pos.z = lotus_positions[2*lid+1];
+		pos.z = lotus_positions[2*i+1];
 		draw(1,0,0,pos,sin(t),1,lotus,program,0);
 	}
 	
@@ -909,15 +865,14 @@ void display(void)
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, fur_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
-	scaling = S(0.4,0.4,0.4);
-	pos.x = 70;
-	pos.y = 0;
-	pos.z = 100;
-	draw(1,6,0,pos,0,1,wolf,program,0);git 
-	pos.x = 75;
-	pos.y = 0;
-	pos.z = 90;
-	draw(1,6,0,pos,1,1,wolf,program,0);
+	for (i = 0; i < WOLF_AMOUNT * 2; i+=2)
+	{
+		pos.x = wolf_pos[i];
+		pos.y = 0;
+		pos.z = wolf_pos[i+1];
+		scaling = S(wolf_info[i],wolf_info[i],wolf_info[i]);
+		draw(1,6,0,pos,wolf_info[i+1],1,wolf,program,0);		
+	}
 	
 	//house
 	glActiveTexture(GL_TEXTURE4);
