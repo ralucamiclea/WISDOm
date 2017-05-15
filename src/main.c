@@ -887,7 +887,7 @@ vec3 check_collision_objects(float dist)
 
 			if (player_near_wall && player_in_front_wall) // If player is within a "dist" distance from the line
 			{
-				if (position.y > y && position.y < y+walls[i].height) {
+				if (position.y - player_height > y && position.y - player_height < y+walls[i].height) {
 					vec3 out = {x2-x1,0,z2-z1};
 					collision_object = true;
 					return Normalize(out);
@@ -896,12 +896,16 @@ vec3 check_collision_objects(float dist)
 		}
 		else // Wall is on x axis
 		{
-			if ((position.z > z1 && position.z < z1 + dist) || (position.z < z1 && position.z > z1 - dist))
+			bool player_near_wall = (position.z > z1 && position.z < z1 + dist) || (position.z < z1 && position.z > z1 - dist);
+			bool player_in_front_wall = (position.x < MAX(x1, x2) && position.x > MIN(x1, x2));
+			if (player_near_wall && player_in_front_wall)
 			{
-				vec3 out = {x2-x1,0,0}; // Necessary for the orientation of the wall
-				out = Normalize(out);
-				collision_object = true;
-				return Normalize(out);
+				if (position.y - player_height > y && position.y - player_height < y+walls[i].height) {
+					vec3 out = {x2-x1,0,0}; // Necessary for the orientation of the wall
+					out = Normalize(out);
+					collision_object = true;
+					return Normalize(out);
+				}
 			}
 		}
 
@@ -1161,6 +1165,18 @@ void create_ground(float x1, float z1, float x2, float z2, float height)
 	n_grounds++;
 }
 
+
+void create_box(float x, float y, float z, float size)
+{
+	size = size/2;
+	create_wall(x-size, y, z-size, x+size, y, z-size, 2*size);
+	create_wall(x+size, y, z-size, x+size, y, z+size, 2*size);
+	create_wall(x+size, y, z+size, x-size, y, z+size, 2*size);
+	create_wall(x-size, y, z+size, x-size, y, z-size, 2*size);
+	create_ground(x-size, z-size, x+size, z+size, 2*size);
+}
+
+
 int main(int argc, char *argv[]){
 	time_air = 0;
 	collision_ground = false;
@@ -1184,6 +1200,10 @@ int main(int argc, char *argv[]){
 	create_wall(texWidth-1, -20, 0, 0, -20, 0, 100); // X Axis from origin
 	create_wall(texWidth-1, -20, texWidth-1, texWidth-1, -20, 0, 100); // Z Axis
 	create_wall(0, -20, texWidth-1, texWidth-1, -20, texWidth-1, 100); // X Axis
+
+
+	create_box(10, 0, 10, 3.5);
+
 
 
 	loadTextures(); //for skybox
