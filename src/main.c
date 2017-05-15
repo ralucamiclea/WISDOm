@@ -30,6 +30,9 @@
 #define NOCLIP false
 #define SUPER_SPRINT true
 
+#define MAP_SIZE 1024                
+#define TEP_SIZE 16 
+
 
 
 // Globals
@@ -49,12 +52,33 @@ float horizontalAngle = 0.0;
 float verticalAngle = 0.0;
 
 mat4 frustum_matrix, camera_placement, rotation, translation, scaling, camera_skybox;
-Model *dog, *terrain, *octagon, *tree, *bunny;
-GLuint grass_tex, dog_tex, tree_tex, wood_tex, dirt_tex;
-Model *tree2, *ring, *house, *deer, *bear, *boar, *wolf, *bird;
-GLuint deer_tex, bear_tex, boar_tex, wolf_tex;
+
+Model *terrain, *tree, *lotus, *rose, *cartoontree, *ocean;
+GLuint grass_tex, leaves_tex, wood_tex, lotus_tex;
+
+Model *ring, *cube, *house, *hangars, *rock, *stone, *stone2, *stonewall;
+GLuint dirt_tex, particle_tex, stone_tex, rock_tex;
+
+Model *dog, *bunny, *deer, *bear, *boar, *wolf, *ant;
+GLuint dog_tex, deer_tex, bear_tex, boar_tex, wolf_tex;
+
 TextureData terrain_tex;
-GLuint program, skybox_program, terrain_program; // Reference to shader program
+GLuint map;
+GLuint program, skybox_program, terrain_program, prize_program, particle_program; // Reference to shader program
+
+//LIGHT sources
+Point3D lightSourcesColorsArr[] = { {1.0f, 0.0f, 0.0f}, // Red light
+                                 {0.0f, 1.0f, 0.0f}, // Green light
+                                 {0.0f, 0.0f, 1.0f}, // Blue light
+                                 {1.0f, 1.0f, 1.0f} }; // White light
+
+GLfloat specularExponent[] = {10.0, 20.0, 60.0, 5.0};
+GLint isDirectional[] = {0,0,1,1};
+
+Point3D lightSourcesDirectionsPositions[] = { {10.0f, 5.0f, 0.0f}, // Red light, positional
+                                       {0.0f, 5.0f, 10.0f}, // Green light, positional
+                                       {-1.0f, 0.0f, 0.0f}, // Blue light along X
+                                       {0.0f, 0.0f, -1.0f} }; // White light along Z
 
 //SKYBOX
 Model *box[6];
@@ -237,7 +261,6 @@ void loadTextures()
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 }
 
-
 //TERRAIN GENERATION function
 Model* GenerateTerrain(TextureData *tex)
 {
@@ -413,6 +436,83 @@ void DrawModelInstanced(Model *m, GLuint program, char* vertexVariableName, char
 	}
 }
 
+unsigned int vertexArrayObjID; //use as input to the display_billboarding
+void init_billboarding(void){
+
+	GLfloat vertices[] = {	-0.5f,-0.5f,0.0f,
+						-0.5f,0.5f,0.0f,
+						0.5f,-0.5f,0.0f };
+
+	// two vertex buffer objects, used for uploading the
+	unsigned int vertexBufferObjID;
+
+	// GL inits
+	glDisable(GL_DEPTH_TEST);
+	printError("GL inits");
+
+
+	// Load and compile shader
+	particle_program = loadShaders("instancing.vert", "instancing.frag");
+	glUseProgram(particle_program);
+	printError("init shader");
+
+	// Upload geometry to the GPU:
+
+	// Allocate and activate Vertex Array Object
+	glGenVertexArrays(1, &vertexArrayObjID);
+	glBindVertexArray(vertexArrayObjID);
+	// Allocate Vertex Buffer Objects
+	glGenBuffers(1, &vertexBufferObjID);
+
+	// VBO for vertex data
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjID);
+	glBufferData(GL_ARRAY_BUFFER, 9*sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(glGetAttribLocation(particle_program, "in_Position"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(glGetAttribLocation(particle_program, "in_Position"));
+
+	// End of upload of geometry
+
+	LoadTGATextureSimple("../tex/particles/star.tga", &particle_tex);
+	glBindTexture(GL_TEXTURE_2D, particle_tex);
+	glUniform1i(glGetUniformLocation(particle_program, "tex"), 0); // Texture unit 0
+
+
+	printError("init arrays");
+}
+
+int particle_count = 5;
+float particle_slope = 0;
+GLfloat particle_a=0.5;
+void display_billboarding(void){
+	glUseProgram(particle_program);
+	//put in displaz billboarding function
+	// clear the screen
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	particle_a += 0.1;
+	mat4 rot, trans, total;
+
+// The angle will be affected by the instance number so we pass the angle instead of  matrix.
+	trans = T(sin(particle_a)/2, 0, 0);
+	glUniformMatrix4fv(glGetUniformLocation(particle_program, "translation"), 1, GL_TRUE, trans.m);
+	glUniform1f(glGetUniformLocation(particle_program, "angle"), particle_a);
+	glUniform1f(glGetUniformLocation(particle_program, "slope"), particle_slope);
+
+	glBindVertexArray(vertexArrayObjID);	// Select VAO
+	glBindTexture(GL_TEXTURE_2D, particle_tex);
+// Draw the triangle 10 times!
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 3, particle_count);
+// instead of the usual
+//	glDrawArrays(GL_TRIANGLES, 0, 3);	// draw object
+
+	//put in displaz billboarding function
+	glDisable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+}
 
 void init(void)
 {
@@ -420,12 +520,17 @@ void init(void)
 
 	//load textures
 	LoadTGATextureData("../tex/fft-terrain.tga", &terrain_tex);
+	LoadTGATextureSimple("map.tga", &map);
 	terrain = GenerateTerrain(&terrain_tex);
 	LoadTGATextureSimple("../tex/grass.tga", &grass_tex);
-	LoadTGATextureSimple("../tex/dog.tga", &dog_tex);
-	LoadTGATextureSimple("../tex/greenleaves.tga", &tree_tex);
+	LoadTGATextureSimple("../tex/greenleaves.tga", &leaves_tex);
 	LoadTGATextureSimple("../tex/woodplanks.tga", &wood_tex);
 	LoadTGATextureSimple("../tex/dirt.tga", &dirt_tex);
+	LoadTGATextureSimple("../tex/stone.tga", &stone_tex);
+	LoadTGATextureSimple("../tex/rock1.tga", &rock_tex);
+	LoadTGATextureSimple("../tex/lotus.tga", &lotus_tex);
+	
+	LoadTGATextureSimple("../tex/dog.tga", &dog_tex);
 	LoadTGATextureSimple("../tex/deer.tga", &deer_tex);
 	LoadTGATextureSimple("../tex/bear.tga", &bear_tex);
 	LoadTGATextureSimple("../tex/boar.tga", &boar_tex);
@@ -444,35 +549,48 @@ void init(void)
 			6);
 	}
 	//load other objects
+	ring = LoadModelPlus("../obj/ring.obj");
+	cube = LoadModelPlus("../obj/cubeplus.obj");
+	house = LoadModelPlus("../obj/house.obj");
+	hangars = LoadModelPlus("../obj/house.obj");
+	rock = LoadModelPlus("../obj/house.obj");
+	stone2 = LoadModelPlus("../obj/house.obj");
+	stonewall = LoadModelPlus("../obj/house.obj");
+	
+	tree = LoadModelPlus("../obj/tree.obj");
+	lotus = LoadModelPlus("../obj/lotus.obj");
+	rose = LoadModelPlus("../obj/rose.obj");
+	cartoontree = LoadModelPlus("../obj/cartoontree.obj");
+	ocean = LoadModelPlus("../obj/ocean.obj");
+	
 	dog = LoadModelPlus("../obj/dog.obj");
-	octagon = LoadModelPlus("../obj/octagon.obj");
-	tree = LoadModelPlus("../obj/nicetree.obj");
 	bunny = LoadModelPlus("../obj/bunny.obj");
-	tree2 = LoadModelPlus("../obj/tree.obj");
-	ring = LoadModelPlus("../obj/tree.obj");
-	house = LoadModelPlus("../obj/tree.obj");
 	deer = LoadModelPlus("../obj/deer-obj.obj");
 	bear = LoadModelPlus("../obj/bear-obj.obj");
 	boar = LoadModelPlus("../obj/boar-obj.obj");
 	wolf = LoadModelPlus("../obj/wolf-obj.obj");
-	bird = LoadModelPlus("../obj/bird.obj");
+	ant = LoadModelPlus("../obj/ant.obj");
+	
 
 	dumpInfo();
 
 	// GL inits
 	glClearColor(0.2,0.2,0.6,0);
 	glutInitDisplayMode(GLUT_DEPTH);
-	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
+	init_billboarding();
+
+	glDisable(GL_CULL_FACE);
 	printError("GL inits");
 
 	// Load and compile shader
 	program = loadShaders("main.vert", "main.frag");
 	skybox_program = loadShaders("skybox.vert", "skybox.frag");
 	terrain_program = loadShaders("terrain.vert", "terrain.frag");
+	prize_program = loadShaders("prize.vert", "prize.frag");
 
 	//set frustrum
-	frustum_matrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 1000.0);
+	frustum_matrix = frustum(-0.1, 0.1, -0.1, 0.1, 0.2, 300.0);
 
 	glUseProgram(skybox_program);
 	glUniform1i(glGetUniformLocation(skybox_program, "texUnit"), 0);
@@ -481,37 +599,72 @@ void init(void)
 	glUseProgram(terrain_program);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 
+	glUseProgram(prize_program);
+	glUniformMatrix4fv(glGetUniformLocation(prize_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
+
 	glUseProgram(program);
 	glUniformMatrix4fv(glGetUniformLocation(program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
+
+	glUseProgram(particle_program);
+	glUniformMatrix4fv(glGetUniformLocation(particle_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 
 	glEnable(GL_DEPTH_TEST);
 }
 
-//DRAW objects as specified
+int jump = 1, flag = 0;
+void jump_animation() {
+	if(!flag)
+    {
+        jump+=1;
+        if(jump>24)
+            flag=1;
+    }
+    if(flag)
+    {
+        jump-=1;
+        if(jump<4)
+            flag=0;
+    }
+}
 
-void draw(int edge_val, int distance_offset, int origin_offset, vec3 pos, int rotangle, Model *obj, GLuint program){
+//DRAW objects as specified
+int check = 0;
+void draw(int edge_val, int distance_offset, int origin_offset, vec3 pos, int rotangle, int rotax, Model *obj, GLuint program, int normal){
 
 	edge = edge_val;
 	int count = 1 * edge;
 	int i;
+
 	translation = T(pos.x, calculateHeight(terrain, pos) + origin_offset, pos.z);
-	rotation = Ry(rotangle);
+
+	if(rotax == 0)
+		rotation = Rx(rotangle);
+	if(rotax == 1)
+		rotation = Ry(rotangle);
+	if(rotax == 2)
+		rotation = Rz(rotangle);
 
 	glUniform1i(glGetUniformLocation(program, "edge"), edge);
 	glUniform1i(glGetUniformLocation(program, "count"), count);
 	glUniform1i(glGetUniformLocation(program, "distance"), distance_offset);
+	glUniformMatrix4fv(glGetUniformLocation(program, "camera"), 1, GL_TRUE, camera_placement.m);
 	glUniformMatrix4fv(glGetUniformLocation(program, "scaling"), 1, GL_TRUE, scaling.m);
 	glUniformMatrix4fv(glGetUniformLocation(program, "translation"), 1, GL_TRUE, translation.m);
 	glUniformMatrix4fv(glGetUniformLocation(program, "rotation"), 1, GL_TRUE, rotation.m);
 
 	//instancing
-	DrawModelInstanced(obj, program, "in_Position", 0L, "inTexCoord", count);
+	if(normal != 0){
+		DrawModelInstanced(obj, program, "in_Position", "in_Normal", "inTexCoord", count);
+	}
+	else {
+		DrawModelInstanced(obj, program, "in_Position", 0L, "inTexCoord", count);
+	}
 }
 
 void display(void)
 {
 	vec3 pos = {0,0,0};
-	int i;
+	int i, j;
 
 	// clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -542,6 +695,7 @@ void display(void)
 	glUniformMatrix4fv(glGetUniformLocation(skybox_program, "translation"), 1, GL_TRUE, translation.m);
 
 	//skybox texture
+	printError("skybox texture");
 	for (i = 0; i < 6; i++)
 	{
 		glBindTexture(GL_TEXTURE_2D, tx[i].texID);
@@ -556,94 +710,146 @@ void display(void)
 	glActiveTexture(GL_TEXTURE0);
 
 	//draw terrain
+	printError("terrain");
 	glUseProgram(terrain_program);
 	translation = T(0,0,0);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "translation"), 1, GL_TRUE, translation.m);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "camera"), 1, GL_TRUE, camera_placement.m);
+	
+	// Bind to texture units
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, grass_tex);
-	glUniform1i(glGetUniformLocation(terrain_program, "texUnit"), 0);
+	glUniform1i(glGetUniformLocation(terrain_program, "grass"), 0);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, lotus_tex);
+	glUniform1i(glGetUniformLocation(terrain_program, "water"), 1);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, dirt_tex);
+	glUniform1i(glGetUniformLocation(terrain_program, "dirt"), 2);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, map);
+	glUniform1i(glGetUniformLocation(terrain_program, "map"), 3);
+	
 	DrawModel(terrain, terrain_program, "in_Position", "in_Normal", "inTexCoord");
 
-	//draw objects
-	glUseProgram(program);
-	glUniformMatrix4fv(glGetUniformLocation(program, "camera"), 1, GL_TRUE, camera_placement.m);
+	glActiveTexture(GL_TEXTURE0); 
 
-	//dog
-	scaling = S(0.05,0.05,0.05);
-	pos.x = 100;
-	pos.y = 0;
-	pos.z = 200;
-	glBindTexture(GL_TEXTURE_2D, dog_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	draw(5,6,0,pos,60,dog,program);
-
-	//trees
-	scaling = S(0.05,0.05,0.05);
-	pos.x = 200;
-	pos.y = 0;
-	pos.z = 200;
-	glBindTexture(GL_TEXTURE_2D, tree_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	draw(3,55,-1,pos,0,tree,program);
-	pos.z = 150;
-	draw(4,35,-1,pos,45,tree,program);
-	pos.z = 80;
-	scaling = S(0.03,0.03,0.03);
-	draw(2,75,-1,pos,90,tree,program);
-
-	//bunny
+	//draw reward
+	printError("reward");
+	glUseProgram(prize_program);
+	glUniform3f(glGetUniformLocation(prize_program, "xyz"), position.x, position.y, position.z); //camera position
+	glUniform3fv(glGetUniformLocation(prize_program, "lightSourcesDirPosArr"), 4, &lightSourcesDirectionsPositions[0].x);
+	glUniform3fv(glGetUniformLocation(prize_program, "lightSourcesColorArr"), 4, &lightSourcesColorsArr[0].x);
+	glUniform1fv(glGetUniformLocation(prize_program, "specularExponent"), 4, specularExponent);
+	glUniform1iv(glGetUniformLocation(prize_program, "isDirectional"), 4, isDirectional);
 	scaling = S(2,2,2);
 	pos.x = 100;
 	pos.y = 0;
+	pos.z = 65;
+	draw(1,6,10,pos,t/100,0,ring,prize_program,1);
+	pos.x = 70;
+	pos.y = 0;
 	pos.z = 100;
+	draw(1,6,10,pos,t/100,2,ring,prize_program,1);
+	pos.x = 185;
+	pos.y = 0;
+	pos.z = 185;
+	draw(1,6,10,pos,t/100,0,ring,prize_program,1);
+	pos.x = 85;
+	pos.y = 0;
+	pos.z = 200;
+	draw(1,6,10,pos,t/100,2,ring,prize_program,1);
+	pos.x = 10;
+	pos.y = 0;
+	pos.z = 215;
+	draw(1,6,10,pos,t/100,2,ring,prize_program,1);
+
+
+	//draw objects
+	glUseProgram(program);
+
+	//dog
+	glBindTexture(GL_TEXTURE_2D, dog_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	scaling = S(0.05,0.05,0.05);
+	pos.x = 80;
+	pos.y = 0;
+	pos.z = 250;
+	draw(2,6,0,pos,60,1,dog,program,0);
+
+	//trees
+	glBindTexture(GL_TEXTURE_2D, leaves_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	scaling = S(0.05,0.05,0.05);
+	pos.x = 200;
+	pos.y = 0;
+	pos.z = 60;
+	draw(3,55,-1,pos,0,1,tree,program,0);
+	pos.x = 190;
+	pos.z = 65;
+	draw(2,35,-1,pos,45,1,tree,program,0);
+	pos.z = 70;
+	scaling = S(0.03,0.03,0.03);
+	draw(1,75,-1,pos,90,1,tree,program,0);
+
+	//bunny
 	glBindTexture(GL_TEXTURE_2D, dirt_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	draw(1,6,1,pos,t/100,bunny,program);
+	scaling = S(2,2,2);
+	pos.x = 180;
+	pos.y = 0;
+	pos.z = 68;
+	jump_animation();
+	draw(1,6,jump/4,pos,45,1,bunny,program,0);
+
 
 	//deer
+	glBindTexture(GL_TEXTURE_2D, deer_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	scaling = S(0.2,0.2,0.2);
 	pos.x = 3;
 	pos.y = 0;
 	pos.z = 10;
-	glBindTexture(GL_TEXTURE_2D, deer_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	draw(1,6,1,pos,45,deer,program);
+	draw(1,6,1,pos,45,1,deer,program,0);
 
 	//bear
+	glBindTexture(GL_TEXTURE_2D, bear_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	scaling = S(0.2,0.2,0.2);
 	pos.x = 15;
 	pos.y = 0;
 	pos.z = 10;
-	glBindTexture(GL_TEXTURE_2D, bear_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	draw(1,6,1,pos,45,bear,program);
+	draw(1,6,1,pos,45,1,bear,program,0);
 
 	//boar
+	glBindTexture(GL_TEXTURE_2D, boar_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	scaling = S(0.2,0.2,0.2);
 	pos.x = 10;
 	pos.y = 0;
 	pos.z = 4;
-	glBindTexture(GL_TEXTURE_2D, boar_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	draw(1,6,1,pos,45,boar,program);
+	draw(1,6,1,pos,45,1,boar,program,0);
 
 	//wolf
-	scaling = S(0.2,0.2,0.2);
-	pos.x = 10;
-	pos.y = 0;
-	pos.z = 10;
 	glBindTexture(GL_TEXTURE_2D, wolf_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	draw(1,6,1,pos,45,wolf,program);
-
-	//bird
 	scaling = S(0.2,0.2,0.2);
 	pos.x = 10;
 	pos.y = 0;
 	pos.z = 10;
-	glBindTexture(GL_TEXTURE_2D, dirt_tex);
+	draw(1,6,1,pos,45,1,wolf,program,0);
+	
+	//lotus
+	glBindTexture(GL_TEXTURE_2D, lotus_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	draw(1,6,15,pos,45,bird,program);
+	scaling = S(1,1,1);
+	pos.x = 100;
+	pos.y = 0;
+	pos.z = 65;
+	draw(1,6,1,pos,t/100,1,lotus,program,0);
+
+	glUseProgram(particle_program);
+	//display_billboarding();
 
 	glutSwapBuffers();
 }
@@ -703,7 +909,6 @@ float dot(vec3 v1, vec3 v2)
 //CONTROLS
 void OnTimer(int value)
 {
-
 	if (METRICS)
 	{
 		printf("position :(%f, %f, %f)\n", position.x, position.y, position.z);
@@ -974,6 +1179,7 @@ int main(int argc, char *argv[]){
 
 
 	loadTextures(); //for skybox
+	
 	glutTimerFunc(20, &OnTimer, 0);
 	glutMainLoop();
 	return 0;
