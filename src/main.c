@@ -58,8 +58,8 @@ static float wolf_pos [] = {70,100,75,90}; //pos.x and pos.z
 static float wolf_info [] = {0.45,1,0.4,0}; //scale and rotation angle
 #define WOLF_AMOUNT 2
 
-static float checkpoints_positions [] = {87,90,93,195,163,180,8,90,195,44,241,120,241,15};
-#define CHECKPOINT_AMOUNT 7
+static float checkpoints_positions [] = {87,90,93,195,163,180,8,90,195,44,241,120,241,15,115,100};
+#define CHECKPOINT_AMOUNT 8
 
 static float lotus_positions [] = {179, 155, 176, 170, 184, 165, 200, 159, 200, 176, 209, 167};
 #define LOTUS_AMOUNT 6
@@ -80,7 +80,7 @@ Model *terrain, *tree, *lotus, *rose, *cartoontree, *ocean;
 GLuint grass_tex, leaves_tex, wood_tex, lotus_tex, water_tex;
 
 Model *ring, *cube, *house, *hangars, *rock, *stone, *stone2, *stonewall;
-GLuint dirt_tex, particle_tex, stone_tex, rock_tex;
+GLuint dirt_tex, particle_tex, stone_tex, rock_tex, conc_tex;
 
 Model *dog, *bunny, *wolf, *ant;
 GLuint dog_tex, wolf_tex, fur_tex;
@@ -557,6 +557,7 @@ void init(void)
 	LoadTGATextureSimple("../tex/greenleaves.tga", &leaves_tex);
 	LoadTGATextureSimple("../tex/woodplanks.tga", &wood_tex);
 	LoadTGATextureSimple("../tex/dirt.tga", &dirt_tex);
+	LoadTGATextureSimple("../tex/conc.tga", &conc_tex);
 	LoadTGATextureSimple("../tex/stone.tga", &stone_tex);
 	LoadTGATextureSimple("../tex/rock1.tga", &rock_tex);
 	LoadTGATextureSimple("../tex/lotus.tga", &lotus_tex);
@@ -876,7 +877,7 @@ void display(void)
 	
 	//house
 	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, stone_tex);
+	glBindTexture(GL_TEXTURE_2D, conc_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit1"), 4);
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, stone_tex);
@@ -886,6 +887,19 @@ void display(void)
 	pos.y = 0;
 	pos.z = 100;
 	draw(1,6,4,pos,1,1,house,program,0);
+	
+	//stonewall
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, stone_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit1"), 4);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, stone_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
+	scaling = S(2.4,1,1);
+	pos.x = 140;
+	pos.y = 0;
+	pos.z = 184;
+	draw(1,6,1,pos,2,1,stonewall,program,0);
 	
 	glActiveTexture(GL_TEXTURE0); //just in case
 
