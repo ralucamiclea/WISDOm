@@ -26,12 +26,14 @@
 
 
 //CREATOR MODES
-#define METRICS true
+#define METRICS false
 #define NOCLIP false
 #define SUPER_SPRINT true
 
 #define MAP_SIZE 1024
 #define TEP_SIZE 16
+
+#define CHECKPOINT_SIZE 3
 
 
 
@@ -216,11 +218,17 @@ struct ground_hitbox {
 	float height;
 };
 
-int n_walls, n_grounds;
+struct checkpoint_hitbox {
+	float origin [3];
+	bool taken;
+};
+
+int n_walls, n_grounds, n_checkpoints;
 
 
-struct wall_hitbox walls [1000] = {};
-struct ground_hitbox grounds [1000] = {};
+struct wall_hitbox walls [100] = {};
+struct ground_hitbox grounds [100] = {};
+struct checkpoint_hitbox checkpoints [100] = {};
 
 
 //LOAD texture
@@ -911,6 +919,42 @@ void display(void)
 	glutSwapBuffers();
 }
 
+
+bool check_in_lake()
+{
+	float lake_originX = 198.0f;
+	float lake_originY = 169.0f;
+	float lake_radius = 20.0f;
+	if (sqrt(pow(position.x - 196.5,2) + pow(position.z - 167.5,2)) < 27.0f)
+		return true;
+	else
+		return false;
+}
+
+
+int check_collision_checkpoint()
+{
+	int i;
+	for (i = 0; i < n_checkpoints; i++)
+	{
+		bool taken = checkpoints[i].taken;
+		float cx = checkpoints[i].origin[0];
+		float cy = checkpoints[i].origin[1];
+		float cz = checkpoints[i].origin[2];
+		if (!taken)
+		{
+			if ((position.x > cx - CHECKPOINT_SIZE) && (position.x < cx + CHECKPOINT_SIZE) && (position.z > cz - CHECKPOINT_SIZE && position.z < cz + CHECKPOINT_SIZE))
+			{
+					if (position.y < cy + CHECKPOINT_SIZE && position.y > cy - CHECKPOINT_SIZE)
+					{
+							return i;
+					}
+			}
+		}
+	}
+	return -1;
+}
+
 vec3 check_collision_objects(float dist)
 {
 	int i;
@@ -942,13 +986,13 @@ vec3 check_collision_objects(float dist)
 					player_in_front_wall = (position.x < MAX(x1, x2) && position.x > MIN(x1, x2));
 			}
 
-			if (player_near_wall && player_in_front_wall) // If player is within a "dist" distance from the line
+			if (player_near_wall && player_in_front_wall)
 			{
 				if (position.y - player_height > y && position.y - player_height < y+walls[i].height) {
-					vec3 out = {x2-x1,0,z2-z1};
-					collision_object = true;
-					return Normalize(out);
-				}
+						vec3 out = {x2-x1,0,z2-z1};
+						collision_object = true;
+						return Normalize(out);
+					}
 			}
 		}
 		else // Wall is on x axis
@@ -957,7 +1001,7 @@ vec3 check_collision_objects(float dist)
 			bool player_in_front_wall = (position.x < MAX(x1, x2) && position.x > MIN(x1, x2));
 			if (player_near_wall && player_in_front_wall)
 			{
-				if (position.y - player_height > y && position.y - player_height < y+walls[i].height) {
+				if (position.y - 1.5*player_height > y && position.y - 1.5*player_height < y+walls[i].height) {
 					vec3 out = {x2-x1,0,0}; // Necessary for the orientation of the wall
 					out = Normalize(out);
 					collision_object = true;
@@ -978,6 +1022,17 @@ float dot(vec3 v1, vec3 v2)
 }
 
 
+bool check_win()
+{
+	int i;
+	for (i = 0; i < n_checkpoints; i++)
+	{
+		if (checkpoints[i].taken == false)
+			return false;
+	}
+	return true;
+}
+
 //CONTROLS
 void OnTimer(int value)
 {
@@ -996,6 +1051,17 @@ void OnTimer(int value)
 
 	vec3 collision_vector;
 	collision_vector = check_collision_objects(COLLISION_DIST);
+
+	int checkpoint_id = check_collision_checkpoint();
+	if (checkpoint_id != -1) // CHECKPOINT TAKEN
+	{
+		checkpoints[checkpoint_id].taken = true;
+		if (check_win()) // GAME WON
+		{
+			noclip = true;
+		}
+	}
+
 
 	float collision_factor, sideways_factor;
 	if (collision_object && !noclip)
@@ -1024,22 +1090,25 @@ void OnTimer(int value)
 	}
 
 
+	if (check_in_lake())
+		player_speed = PLAYER_SPEED/2;
+	else
+		player_speed = PLAYER_SPEED;
 	if (glutKeyIsDown('e') && glutKeyIsDown('w')){ // Sprint (Shift)
 			if (SUPER_SPRINT)
-				player_speed = PLAYER_SPEED * SPRINT * 5;
+				player_speed *= SPRINT * 5;
 			else
-				player_speed = PLAYER_SPEED * SPRINT;
+				player_speed *= SPRINT;
 			player_height = PLAYER_HEIGHT;
 	}
 	else
 	{
 		if (glutKeyIsDown('c')){ // Crouching
-				player_speed = PLAYER_SPEED / 2;
+				player_speed /= 2;
 				player_height = PLAYER_HEIGHT / 2;
 		}
 		else
 		{
-				player_speed = PLAYER_SPEED;
 				player_height = PLAYER_HEIGHT;
 		}
 	}
@@ -1126,7 +1195,7 @@ void OnTimer(int value)
 
 
 	if (glutKeyIsDown(32)){ // jump (Space)
-		if (collision_ground || noclip) // Jump only if touching ground
+		if ((collision_ground && !check_in_lake()) || noclip) // Jump only if touching ground
 		{
 				jumping = true;
 				collision_ground = false;
@@ -1210,6 +1279,19 @@ void create_wall(float a, float b, float c, float d, float e, float f, float hei
 	n_walls++;
 }
 
+
+void create_checkpoint(float cx, float cy, float cz)
+{
+	struct checkpoint_hitbox checkpoint;
+	checkpoint.origin[0] = cx;
+	checkpoint.origin[1] = cy;
+	checkpoint.origin[2] = cz;
+	checkpoint.taken = false;
+	checkpoints[n_checkpoints] = checkpoint;
+	n_checkpoints++;
+}
+
+
 void create_ground(float x1, float z1, float x2, float z2, float height)
 {
 	struct ground_hitbox ground1;
@@ -1222,16 +1304,32 @@ void create_ground(float x1, float z1, float x2, float z2, float height)
 	n_grounds++;
 }
 
+void create_high_box(float x, float y, float z, float size, float height)
+{
+	size = size/2;
+	create_wall(x-size, y, z-size, x+size, y, z-size, height);
+	create_wall(x+size, y, z-size, x+size, y, z+size, height);
+	create_wall(x+size, y, z+size, x-size, y, z+size, height);
+	create_wall(x-size, y, z+size, x-size, y, z-size, height);
+	create_ground(x-size, z-size, x+size, z+size, height);
+}
 
 void create_box(float x, float y, float z, float size)
 {
-	size = size/2;
-	create_wall(x-size, y, z-size, x+size, y, z-size, 2*size);
-	create_wall(x+size, y, z-size, x+size, y, z+size, 2*size);
-	create_wall(x+size, y, z+size, x-size, y, z+size, 2*size);
-	create_wall(x-size, y, z+size, x-size, y, z-size, 2*size);
-	create_ground(x-size, z-size, x+size, z+size, 2*size);
+	create_high_box(x, y, z, size, size);
 }
+
+
+
+void create_rectangle(float x1, float y1, float z1, float x2, float y2, float z2, float height)
+{
+	create_wall(x1, y1, z1, x2, y2, z1, height);
+	create_wall(x2, y1, z1, x2, y2, z2, height);
+	create_wall(x2, y1, z2, x1, y2, z2, height);
+	create_wall(x1, y1, z2, x1, y2, z1, height);
+	create_ground(x1, z1, x2, z2, height);
+}
+
 
 
 int main(int argc, char *argv[]){
@@ -1260,6 +1358,8 @@ int main(int argc, char *argv[]){
 
 
 	create_box(10, 0, 10, 3.5);
+
+	create_checkpoint(20, 3, 20);
 
 
 
