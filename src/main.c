@@ -26,7 +26,7 @@
 
 
 //CREATOR MODES
-#define METRICS false
+#define METRICS true
 #define NOCLIP false
 #define SUPER_SPRINT true
 
@@ -42,7 +42,11 @@ vec3 direction = {0.0,0.0,0.0};
 vec3 right = {0.0,0.0,0.0};
 vec3 up = {0.0,0.0,0.0};
 
-static float checkpoints_positions [] = {100, 65, 70, 100, 185, 185, 85, 200, 10, 215};
+static float checkpoints_positions [] = {87,90,93,195,163,180,8,90,195,44,241,120,241,15};
+#define CHECKPOINT_AMOUNT 7
+
+static float lotus_positions [] = {179, 155, 176, 170, 184, 165, 200, 159, 200, 176, 209, 167};
+#define LOTUS_AMOUNT 6
 
 static bool noclip = NOCLIP;
 static float player_height = PLAYER_HEIGHT;
@@ -761,13 +765,13 @@ void display(void)
 
 	scaling = S(2,2,2);
 	int cid;
-	for (cid = 0; cid < (sizeof(checkpoints_positions)/sizeof(float)) / 2; cid++)
+	for (cid = 0; cid < CHECKPOINT_AMOUNT; cid++)
 	{
 			if (checkpoints_display[cid]) {
-				pos.x = checkpoints_positions[cid];
+				pos.x = checkpoints_positions[2*cid];
 				pos.y = 0;
-				pos.z = checkpoints_positions[cid+1];
-				draw(1,6,6.5,pos,t/100,0,ring,prize_program,1);
+				pos.z = checkpoints_positions[2*cid+1];
+				draw(1,0,6.5,pos,t/100,0,ring,prize_program,1);
 			}
 	}
 
@@ -850,30 +854,16 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, lotus_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
 	scaling = S(0.3,0.3,0.3);
-	pos.x = 200;
-	pos.y = 0;
-	pos.z = 160;
-	draw(1,6,1,pos,sin(t),1,lotus,program,0);
-	pos.x = 180;
-	pos.y = 0;
-	pos.z = 155;
-	draw(1,6,1,pos,sin(t),1,lotus,program,0);
-	pos.x = 177;
-	pos.y = 0;
-	pos.z = 170;
-	draw(1,6,1,pos,sin(t),1,lotus,program,0);
-	pos.x = 200;
-	pos.y = 0;
-	pos.z = 177;
-	draw(1,6,1,pos,sin(t),1,lotus,program,0);
-	pos.x = 185;
-	pos.y = 0;
-	pos.z = 165;
-	draw(1,6,1,pos,sin(t),1,lotus,program,0);
-	pos.x = 210;
-	pos.y = 0;
-	pos.z = 167;
-	draw(1,6,1,pos,sin(t),1,lotus,program,0);
+
+	int lid;
+	for (lid = 0; lid < LOTUS_AMOUNT; lid++)
+	{
+		pos.x = lotus_positions[2*lid];
+		pos.y = 0;
+		pos.z = lotus_positions[2*lid+1];
+		draw(1,0,0,pos,sin(t),1,lotus,program,0);
+	}
+
 
 	//rock
 	glBindTexture(GL_TEXTURE_2D, rock_tex);
@@ -1357,9 +1347,9 @@ int main(int argc, char *argv[]){
 	create_wall(0, 0, 10, 10, 0, 0, 10);
 
 	int cid;
-	for (cid = 0; cid < (sizeof(checkpoints_positions)/sizeof(float)) / 2; cid++)
+	for (cid = 0; cid < CHECKPOINT_AMOUNT; cid++)
 	{
-			create_checkpoint(checkpoints_positions[cid], 6.5, checkpoints_positions[cid+1]);
+			create_checkpoint(checkpoints_positions[2*cid], 6.5, checkpoints_positions[2*cid+1]);
 	}
 
 
