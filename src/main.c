@@ -58,6 +58,16 @@ static float wolf_pos [] = {70,100,75,90}; //pos.x and pos.z
 static float wolf_info [] = {0.45,1,0.4,0}; //scale and rotation angle
 #define WOLF_AMOUNT 2
 
+static float house_pos [] = {100,100}; //pos.x and pos.z
+static float house_info [] = {7,1}; //scale and rotation angle
+#define HOUSE_AMOUNT 1
+
+static float wall_pos [] = {140,184,2.4}; //pos.x and pos.z and scale.x
+#define WALL_AMOUNT 1
+
+static float ant_info [] = {110,190,1000, 110,193,500, 112,194,100, 113,191,900, 112,197,300, 115,191,800, 109,192,200, 112,196,400, 114,196,50, 115,190,600, 107,187,700}; //pos.x and pos.z and rotation
+#define ANT_AMOUNT 11
+
 static float checkpoints_positions [] = {87,90,93,195,163,180,8,90,195,44,241,120,241,15,115,100};
 #define CHECKPOINT_AMOUNT 8
 
@@ -882,11 +892,14 @@ void display(void)
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, stone_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
-	scaling = S(7,7,7);
-	pos.x = 100;
-	pos.y = 0;
-	pos.z = 100;
-	draw(1,6,4,pos,1,1,house,program,0);
+	for (i = 0; i < HOUSE_AMOUNT * 2; i+=2)
+	{
+		pos.x = house_pos[i];
+		pos.y = 0;
+		pos.z = house_pos[i+1];
+		scaling = S(house_info[i],house_info[i],house_info[i]);
+		draw(1,6,4,pos,house_info[i+1],1,house,program,0);		
+	}
 	
 	//stonewall
 	glActiveTexture(GL_TEXTURE4);
@@ -895,11 +908,30 @@ void display(void)
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, stone_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
-	scaling = S(2.4,1,1);
-	pos.x = 140;
-	pos.y = 0;
-	pos.z = 184;
-	draw(1,6,1,pos,2,1,stonewall,program,0);
+	for (i = 0; i < HOUSE_AMOUNT * 3; i+=3)
+	{
+		pos.x = wall_pos[i];
+		pos.y = 0;
+		pos.z = wall_pos[i+1];
+		scaling = S(wall_pos[i+2],1,1);
+		draw(1,6,1,pos,2,1,stonewall,program,0);	
+	}
+
+	//ants
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, wolf_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit1"), 4);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, rock_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
+	for (i = 0; i < ANT_AMOUNT * 3; i+=3)
+	{
+		pos.x = ant_info[i];
+		pos.y = 0;
+		pos.z = ant_info[i+1];
+		scaling = S(0.4,0.4,0.4);
+		draw(1,3,0,pos,t/ant_info[i+2],1,ant,program,0);		
+	}
 	
 	glActiveTexture(GL_TEXTURE0); //just in case
 
