@@ -62,7 +62,7 @@ Model *ring, *cube, *house, *hangars, *rock, *stone, *stone2, *stonewall;
 GLuint dirt_tex, particle_tex, stone_tex, rock_tex;
 
 Model *dog, *bunny, *deer, *bear, *boar, *wolf, *ant;
-GLuint dog_tex, deer_tex, bear_tex, boar_tex, wolf_tex;
+GLuint dog_tex, deer_tex, bear_tex, boar_tex, wolf_tex, fur_tex;
 
 TextureData terrain_tex;
 GLuint map;
@@ -540,10 +540,11 @@ void init(void)
 	LoadTGATextureSimple("../tex/ocean.tga", &water_tex);
 
 	LoadTGATextureSimple("../tex/dog.tga", &dog_tex);
-	LoadTGATextureSimple("../tex/deer.tga", &deer_tex);
+	LoadTGATextureSimple("../tex/dogfur.tga", &deer_tex);
 	LoadTGATextureSimple("../tex/bear.tga", &bear_tex);
 	LoadTGATextureSimple("../tex/boar.tga", &boar_tex);
 	LoadTGATextureSimple("../tex/wolf.tga", &wolf_tex);
+	LoadTGATextureSimple("../tex/fur.tga", &fur_tex);
 
 	//load skybox
 	for (i = 0; i < 6; i++)
@@ -639,7 +640,7 @@ void jump_animation() {
 
 //DRAW objects as specified
 int check = 0;
-void draw(int edge_val, int distance_offset, int origin_offset, vec3 pos, int rotangle, int rotax, Model *obj, GLuint program, int normal){
+void draw(int edge_val, float distance_offset, float origin_offset, vec3 pos, int rotangle, int rotax, Model *obj, GLuint program, int normal){
 
 	edge = edge_val;
 	int count = 1 * edge;
@@ -727,9 +728,11 @@ void display(void)
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "camera"), 1, GL_TRUE, camera_placement.m);
 
 	// Bind to texture units
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE6);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 	glBindTexture(GL_TEXTURE_2D, grass_tex);
-	glUniform1i(glGetUniformLocation(terrain_program, "grass"), 0);
+	glUniform1i(glGetUniformLocation(terrain_program, "grass"), 6);
 	glActiveTexture(GL_TEXTURE1);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -782,8 +785,12 @@ void display(void)
 	glUseProgram(program);
 
 	//dog
+	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, dog_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	glUniform1i(glGetUniformLocation(program, "texUnit1"), 4);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, dog_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
 	scaling = S(0.05,0.05,0.05);
 	pos.x = 80;
 	pos.y = 0;
@@ -791,70 +798,102 @@ void display(void)
 	draw(2,6,0,pos,60,1,dog,program,0);
 
 	//trees
+	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, leaves_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	scaling = S(0.05,0.05,0.05);
+	glUniform1i(glGetUniformLocation(program, "texUnit1"), 4);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, leaves_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
+	scaling = S(0.01,0.01,0.01);
 	pos.x = 200;
 	pos.y = 0;
 	pos.z = 60;
-	draw(3,55,-1,pos,0,1,tree,program,0);
+	draw(1,55,-1,pos,0,1,tree,program,0);
 	pos.x = 190;
 	pos.z = 65;
-	draw(2,35,-1,pos,45,1,tree,program,0);
+	draw(1,35,-1,pos,1,1,tree,program,0);
+	pos.z = 68;
+	draw(1,75,-1,pos,2,1,tree,program,0);
+	pos.x = 210;
+	pos.z = 50;
+	scaling = S(0.02,0.02,0.02);
+	draw(1,75,-1,pos,2.5,1,tree,program,0);
+	pos.x = 200;
+	pos.z = 55;
+	draw(1,55,-1,pos,0,1,tree,program,0);
+	pos.x = 190;
+	pos.z = 60;
+	draw(1,35,-1,pos,1,1,tree,program,0);
+	pos.x = 175;
+	pos.z = 68;
+	draw(1,75,-1,pos,2,1,tree,program,0);
+	pos.x = 165;
 	pos.z = 70;
-	scaling = S(0.03,0.03,0.03);
-	draw(1,75,-1,pos,90,1,tree,program,0);
-
+	scaling = S(0.01,0.01,0.01);
+	draw(1,75,-1,pos,2.5,1,tree,program,0);
+	pos.x = 170;
+	pos.z = 50;
+	draw(1,75,-1,pos,2.5,1,tree,program,0);
+	pos.x = 175;
+	pos.z = 55;
+	draw(1,55,-1,pos,0,1,tree,program,0);
+	pos.x = 175;
+	pos.z = 57;
+	draw(1,35,-1,pos,1,1,tree,program,0);
+	pos.x = 200;
+	pos.z = 53;
+	draw(1,75,-1,pos,2,1,tree,program,0);
+	pos.x = 210;
+	pos.z = 60;
+	scaling = S(0.01,0.01,0.01);
+	draw(1,75,-1,pos,2.5,1,tree,program,0);
+	scaling = S(0.02,0.02,0.02);
+	pos.x = 170;
+	pos.z = 50;
+	draw(1,75,-1,pos,2.5,1,tree,program,0);
+	pos.x = 180;
+	pos.z = 40;
+	draw(1,75,-1,pos,2.5,1,tree,program,0);
+	pos.x = 190;
+	pos.z = 35;
+	draw(1,55,-1,pos,0,1,tree,program,0);
+	pos.x = 190;
+	pos.z = 80;
+	draw(1,35,-1,pos,1,1,tree,program,0);
+	
 	//bunny
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, fur_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit1"), 4);
+	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, dirt_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
 	scaling = S(2,2,2);
 	pos.x = 180;
 	pos.y = 0;
 	pos.z = 68;
+	draw(1,6,jump/4,pos,0,1,bunny,program,0);
+	pos.x = 189;
+	pos.y = 0;
+	pos.z = 60;
+	draw(1,6,jump/3,pos,2,1,bunny,program,0);
+	pos.x = 170;
+	pos.y = 0;
+	pos.z = 65;
+	draw(1,8,jump/5,pos,1,1,bunny,program,0);
+	pos.x = 175;
+	pos.y = 0;
+	pos.z = 60;
+	draw(1,7,jump/4,pos,3,1,bunny,program,0);
 	jump_animation();
-	draw(1,6,jump/4,pos,45,1,bunny,program,0);
-
-
-	//deer
-	glBindTexture(GL_TEXTURE_2D, deer_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	scaling = S(0.2,0.2,0.2);
-	pos.x = 3;
-	pos.y = 0;
-	pos.z = 10;
-	draw(1,6,1,pos,45,1,deer,program,0);
-
-	//bear
-	glBindTexture(GL_TEXTURE_2D, bear_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	scaling = S(0.2,0.2,0.2);
-	pos.x = 15;
-	pos.y = 0;
-	pos.z = 10;
-	draw(1,6,1,pos,45,1,bear,program,0);
-
-	//boar
-	glBindTexture(GL_TEXTURE_2D, boar_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	scaling = S(0.2,0.2,0.2);
-	pos.x = 10;
-	pos.y = 0;
-	pos.z = 4;
-	draw(1,6,1,pos,45,1,boar,program,0);
-
-	//wolf
-	glBindTexture(GL_TEXTURE_2D, wolf_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	scaling = S(0.2,0.2,0.2);
-	pos.x = 10;
-	pos.y = 0;
-	pos.z = 10;
-	draw(1,6,1,pos,45,1,wolf,program,0);
 
 	//lotus
+	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, lotus_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	glUniform1i(glGetUniformLocation(program, "texUnit1"), 4);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, lotus_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
 	scaling = S(0.3,0.3,0.3);
 	pos.x = 200;
 	pos.y = 0;
@@ -881,37 +920,37 @@ void display(void)
 	pos.z = 167;
 	draw(1,6,1,pos,sin(t),1,lotus,program,0);
 	
-	//rock
-	glBindTexture(GL_TEXTURE_2D, rock_tex);
-	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	scaling = S(0.01,0.01,0.01);
-	pos.x = 215;
+	//wolf
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, wolf_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit1"), 4);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, fur_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
+	scaling = S(0.4,0.4,0.4);
+	pos.x = 70;
 	pos.y = 0;
-	pos.z = 200;
-	draw(1,6,-5,pos,45,1,rock,program,0);
-	scaling = S(0.02,0.02,0.02);
-	pos.x = 210;
+	pos.z = 100;
+	draw(1,6,0,pos,0,1,wolf,program,0);
+	pos.x = 75;
 	pos.y = 0;
-	pos.z = 200;
-	draw(1,6,-1,pos,60,1,rock,program,0);
-	scaling = S(0.03,0.03,0.03);
-	pos.x = 210;
+	pos.z = 90;
+	draw(1,6,0,pos,1,1,wolf,program,0);
+	
+	//house
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, stone_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit1"), 4);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, stone_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
+	scaling = S(7,7,7);
+	pos.x = 100;
 	pos.y = 0;
-	pos.z = 190;
-	draw(1,6,-1,pos,45,1,rock,program,0);
-	scaling = S(0.05,0.05,0.05);
-	pos.x = 215;
-	pos.y = 0;
-	pos.z = 190;
-	draw(1,6,-3,pos,45,1,rock,program,0);
-	pos.x = 210;
-	pos.y = 0;
-	pos.z = 185;
-	draw(1,6,-3,pos,60,2,rock,program,0);
-	pos.x = 210;
-	pos.y = 0;
-	pos.z = 183;
-	draw(1,6,-1,pos,60,2,rock,program,0);
+	pos.z = 100;
+	draw(1,6,4,pos,1,1,house,program,0);
+	
+	glActiveTexture(GL_TEXTURE0); //just in case
 
 	glUseProgram(particle_program);
 	//display_billboarding();
