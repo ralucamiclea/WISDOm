@@ -26,8 +26,8 @@
 
 
 //CREATOR MODES
-#define METRICS false
-#define NOCLIP false
+#define METRICS true
+#define NOCLIP true
 #define SUPER_SPRINT true
 
 #define MAP_SIZE 1024
@@ -1302,8 +1302,9 @@ int main(int argc, char *argv[]){
 
 	create_box(10, 0, 10, 3.5);
 
-	create_checkpoint(20, 3, 20);
+	create_checkpoint(200, 3, 200);
 
+	create_wall(0, 0, 10, 10, 0, 0, 10);
 
 
 	loadTextures(); //for skybox
