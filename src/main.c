@@ -1331,7 +1331,6 @@ void create_rectangle(float x1, float y1, float z1, float x2, float y2, float z2
 }
 
 
-
 int main(int argc, char *argv[]){
 	time_air = 0;
 	collision_ground = false;
