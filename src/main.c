@@ -666,7 +666,9 @@ vec3 check_collision_objects(float dist)
 			float b = x1 - a*z1;
 
 			float point = a * position.z + b;
-			if ((point > position.x && point < position.x + dist) || (point < position.x && point > position.x - dist)) // If player is within a "dist" distance from the line
+			bool player_near_wall = (point > position.x && point < position.x + dist) || (point < position.x && point > position.x - dist);
+			// TODO: FIX THAT, VERIFY THAT THE PLAYER IS IN FRONT OF THE WALL
+			if (player_near_wall) // If player is within a "dist" distance from the line
 			{
 				if (position.y > y && position.y < y+walls[i].height) {
 					vec3 out = {x2-x1,0,z2-z1};
@@ -706,7 +708,7 @@ void OnTimer(int value)
 	{
 		printf("position :(%f, %f, %f)\n", position.x, position.y, position.z);
 		printf("direction:(%f, %f, %f)\n", direction.x, direction.y, direction.z);
-		printf("ground height: %f (%f)\n", calculateHeight, calculateGroundHeight);
+		printf("ground height: %f (%f)\n", calculateHeight(terrain, position), calculateGroundHeight(terrain, position));
 		printf("\n");
 	}
 
@@ -968,7 +970,7 @@ int main(int argc, char *argv[]){
 	create_wall(0, -20, texWidth-1, texWidth-1, -20, texWidth-1, 100); // X Axis
 
 	create_ground(99, 99, 101, 101, 15);
-	create_wall(99, 14, 99, 100, 14, 99, 10);
+	create_wall(99, 12.75, 99, 100, 12.75, 99, 1);
 
 
 	loadTextures(); //for skybox
