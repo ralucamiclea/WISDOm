@@ -54,7 +54,7 @@ float verticalAngle = 0.0;
 mat4 frustum_matrix, camera_placement, rotation, translation, scaling, camera_skybox;
 
 Model *terrain, *tree, *lotus, *rose, *cartoontree, *ocean;
-GLuint grass_tex, leaves_tex, wood_tex, lotus_tex;
+GLuint grass_tex, leaves_tex, wood_tex, lotus_tex, water_tex;
 
 Model *ring, *cube, *house, *hangars, *rock, *stone, *stone2, *stonewall;
 GLuint dirt_tex, particle_tex, stone_tex, rock_tex;
@@ -520,7 +520,7 @@ void init(void)
 
 	//load textures
 	LoadTGATextureData("../tex/fft-terrain.tga", &terrain_tex);
-	LoadTGATextureSimple("map.tga", &map);
+	LoadTGATextureSimple("../tex/map.tga", &map);
 	terrain = GenerateTerrain(&terrain_tex);
 	LoadTGATextureSimple("../tex/grass.tga", &grass_tex);
 	LoadTGATextureSimple("../tex/greenleaves.tga", &leaves_tex);
@@ -529,6 +529,7 @@ void init(void)
 	LoadTGATextureSimple("../tex/stone.tga", &stone_tex);
 	LoadTGATextureSimple("../tex/rock1.tga", &rock_tex);
 	LoadTGATextureSimple("../tex/lotus.tga", &lotus_tex);
+	LoadTGATextureSimple("../tex/ocean.tga", &water_tex);
 
 	LoadTGATextureSimple("../tex/dog.tga", &dog_tex);
 	LoadTGATextureSimple("../tex/deer.tga", &deer_tex);
@@ -552,10 +553,11 @@ void init(void)
 	ring = LoadModelPlus("../obj/ring.obj");
 	cube = LoadModelPlus("../obj/cubeplus.obj");
 	house = LoadModelPlus("../obj/house.obj");
-	hangars = LoadModelPlus("../obj/house.obj");
-	rock = LoadModelPlus("../obj/house.obj");
-	stone2 = LoadModelPlus("../obj/house.obj");
-	stonewall = LoadModelPlus("../obj/house.obj");
+	hangars = LoadModelPlus("../obj/2hangars.obj");
+	rock = LoadModelPlus("../obj/rock.obj");
+	stone = LoadModelPlus("../obj/stone.obj");
+	stone2 = LoadModelPlus("../obj/stone2.obj");
+	stonewall = LoadModelPlus("../obj/stonewall.obj");
 
 	tree = LoadModelPlus("../obj/tree.obj");
 	lotus = LoadModelPlus("../obj/lotus.obj");
@@ -721,15 +723,18 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, grass_tex);
 	glUniform1i(glGetUniformLocation(terrain_program, "grass"), 0);
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, lotus_tex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_2D, water_tex);
 	glUniform1i(glGetUniformLocation(terrain_program, "water"), 1);
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, dirt_tex);
-	glUniform1i(glGetUniformLocation(terrain_program, "dirt"), 2);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_2D, stone_tex);
+	glUniform1i(glGetUniformLocation(terrain_program, "stones"), 2);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, map);
 	glUniform1i(glGetUniformLocation(terrain_program, "map"), 3);
-
 	DrawModel(terrain, terrain_program, "in_Position", "in_Normal", "inTexCoord");
 
 	glActiveTexture(GL_TEXTURE0);
@@ -762,7 +767,7 @@ void display(void)
 	pos.x = 10;
 	pos.y = 0;
 	pos.z = 215;
-	draw(1,6,10,pos,t/100,2,ring,prize_program,1);
+	draw(1,6,10,pos,t/100,0,ring,prize_program,1);
 
 
 	//draw objects
@@ -842,11 +847,63 @@ void display(void)
 	//lotus
 	glBindTexture(GL_TEXTURE_2D, lotus_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
-	scaling = S(1,1,1);
-	pos.x = 100;
+	scaling = S(0.3,0.3,0.3);
+	pos.x = 200;
 	pos.y = 0;
-	pos.z = 65;
-	draw(1,6,1,pos,t/100,1,lotus,program,0);
+	pos.z = 160;
+	draw(1,6,1,pos,sin(t),1,lotus,program,0);
+	pos.x = 180;
+	pos.y = 0;
+	pos.z = 155;
+	draw(1,6,1,pos,sin(t),1,lotus,program,0);
+	pos.x = 177;
+	pos.y = 0;
+	pos.z = 170;
+	draw(1,6,1,pos,sin(t),1,lotus,program,0);
+	pos.x = 200;
+	pos.y = 0;
+	pos.z = 177;
+	draw(1,6,1,pos,sin(t),1,lotus,program,0);
+	pos.x = 185;
+	pos.y = 0;
+	pos.z = 165;
+	draw(1,6,1,pos,sin(t),1,lotus,program,0);
+	pos.x = 210;
+	pos.y = 0;
+	pos.z = 167;
+	draw(1,6,1,pos,sin(t),1,lotus,program,0);
+	
+	//rock
+	glBindTexture(GL_TEXTURE_2D, rock_tex);
+	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
+	scaling = S(0.01,0.01,0.01);
+	pos.x = 215;
+	pos.y = 0;
+	pos.z = 200;
+	draw(1,6,-5,pos,45,1,rock,program,0);
+	scaling = S(0.02,0.02,0.02);
+	pos.x = 210;
+	pos.y = 0;
+	pos.z = 200;
+	draw(1,6,-1,pos,60,1,rock,program,0);
+	scaling = S(0.03,0.03,0.03);
+	pos.x = 210;
+	pos.y = 0;
+	pos.z = 190;
+	draw(1,6,-1,pos,45,1,rock,program,0);
+	scaling = S(0.05,0.05,0.05);
+	pos.x = 215;
+	pos.y = 0;
+	pos.z = 190;
+	draw(1,6,-3,pos,45,1,rock,program,0);
+	pos.x = 210;
+	pos.y = 0;
+	pos.z = 185;
+	draw(1,6,-3,pos,60,2,rock,program,0);
+	pos.x = 210;
+	pos.y = 0;
+	pos.z = 183;
+	draw(1,6,-1,pos,60,2,rock,program,0);
 
 	glUseProgram(particle_program);
 	//display_billboarding();
