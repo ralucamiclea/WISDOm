@@ -26,8 +26,8 @@
 
 
 //CREATOR MODES
-#define METRICS true
-#define NOCLIP true
+#define METRICS false
+#define NOCLIP false
 #define SUPER_SPRINT true
 
 #define MAP_SIZE 1024
@@ -36,12 +36,13 @@
 #define CHECKPOINT_SIZE 3
 
 
-
 // Globals
 vec3 position = {3.0,10.0,3.0};
 vec3 direction = {0.0,0.0,0.0};
 vec3 right = {0.0,0.0,0.0};
 vec3 up = {0.0,0.0,0.0};
+
+static float checkpoints_positions [] = {100, 65, 70, 100, 185, 185, 85, 200, 10, 215};
 
 static bool noclip = NOCLIP;
 static float player_height = PLAYER_HEIGHT;
@@ -229,6 +230,8 @@ int n_walls, n_grounds, n_checkpoints;
 struct wall_hitbox walls [100] = {};
 struct ground_hitbox grounds [100] = {};
 struct checkpoint_hitbox checkpoints [100] = {};
+
+bool checkpoints_display [100] = {};
 
 
 //LOAD texture
@@ -639,7 +642,7 @@ void jump_animation() {
 
 //DRAW objects as specified
 int check = 0;
-void draw(int edge_val, int distance_offset, int origin_offset, vec3 pos, int rotangle, int rotax, Model *obj, GLuint program, int normal){
+void draw(int edge_val, float distance_offset, float origin_offset, vec3 pos, int rotangle, int rotax, Model *obj, GLuint program, int normal){
 
 	edge = edge_val;
 	int count = 1 * edge;
@@ -755,27 +758,18 @@ void display(void)
 	glUniform3fv(glGetUniformLocation(prize_program, "lightSourcesColorArr"), 4, &lightSourcesColorsArr[0].x);
 	glUniform1fv(glGetUniformLocation(prize_program, "specularExponent"), 4, specularExponent);
 	glUniform1iv(glGetUniformLocation(prize_program, "isDirectional"), 4, isDirectional);
+
 	scaling = S(2,2,2);
-	pos.x = 100;
-	pos.y = 0;
-	pos.z = 65;
-	draw(1,6,10,pos,t/100,0,ring,prize_program,1);
-	pos.x = 70;
-	pos.y = 0;
-	pos.z = 100;
-	draw(1,6,10,pos,t/100,2,ring,prize_program,1);
-	pos.x = 185;
-	pos.y = 0;
-	pos.z = 185;
-	draw(1,6,10,pos,t/100,0,ring,prize_program,1);
-	pos.x = 85;
-	pos.y = 0;
-	pos.z = 200;
-	draw(1,6,10,pos,t/100,2,ring,prize_program,1);
-	pos.x = 10;
-	pos.y = 0;
-	pos.z = 215;
-	draw(1,6,10,pos,t/100,0,ring,prize_program,1);
+	int cid;
+	for (cid = 0; cid < (sizeof(checkpoints_positions)/sizeof(float)) / 2; cid++)
+	{
+			if (checkpoints_display[cid]) {
+				pos.x = checkpoints_positions[cid];
+				pos.y = 0;
+				pos.z = checkpoints_positions[cid+1];
+				draw(1,6,6.5,pos,t/100,0,ring,prize_program,1);
+			}
+	}
 
 
 	//draw objects
@@ -880,7 +874,7 @@ void display(void)
 	pos.y = 0;
 	pos.z = 167;
 	draw(1,6,1,pos,sin(t),1,lotus,program,0);
-	
+
 	//rock
 	glBindTexture(GL_TEXTURE_2D, rock_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
@@ -945,7 +939,7 @@ int check_collision_checkpoint()
 		{
 			if ((position.x > cx - CHECKPOINT_SIZE) && (position.x < cx + CHECKPOINT_SIZE) && (position.z > cz - CHECKPOINT_SIZE && position.z < cz + CHECKPOINT_SIZE))
 			{
-					if (position.y < cy + CHECKPOINT_SIZE && position.y > cy - CHECKPOINT_SIZE)
+					if (position.y < cy + CHECKPOINT_SIZE/2 && position.y > cy - CHECKPOINT_SIZE/2)
 					{
 							return i;
 					}
@@ -1056,6 +1050,7 @@ void OnTimer(int value)
 	if (checkpoint_id != -1) // CHECKPOINT TAKEN
 	{
 		checkpoints[checkpoint_id].taken = true;
+		checkpoints_display[checkpoint_id] = false;
 		if (check_win()) // GAME WON
 		{
 			noclip = true;
@@ -1214,7 +1209,7 @@ void OnTimer(int value)
 		if (!collision_ground) {
 			time_air++;
 			if (jumping){
-					position.y -= (float)(time_air - 20.0)/100.0;
+					position.y -= (float)(time_air - 25.0)/100.0;
 			}
 			else {// falling
 					position.y -= (float)(time_air)/100.0;
@@ -1288,6 +1283,7 @@ void create_checkpoint(float cx, float cy, float cz)
 	checkpoint.origin[2] = cz;
 	checkpoint.taken = false;
 	checkpoints[n_checkpoints] = checkpoint;
+	checkpoints_display[n_checkpoints] = true;
 	n_checkpoints++;
 }
 
@@ -1358,9 +1354,14 @@ int main(int argc, char *argv[]){
 
 	create_box(10, 0, 10, 3.5);
 
-	create_checkpoint(200, 3, 200);
-
 	create_wall(0, 0, 10, 10, 0, 0, 10);
+
+	int cid;
+	for (cid = 0; cid < (sizeof(checkpoints_positions)/sizeof(float)) / 2; cid++)
+	{
+			create_checkpoint(checkpoints_positions[cid], 6.5, checkpoints_positions[cid+1]);
+	}
+
 
 
 	loadTextures(); //for skybox
