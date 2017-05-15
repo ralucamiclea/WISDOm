@@ -862,6 +862,19 @@ void display(void)
 	glutSwapBuffers();
 }
 
+
+bool check_in_lake()
+{
+	float lake_originX = 198.0f;
+	float lake_originY = 169.0f;
+	float lake_radius = 20.0f;
+	if (sqrt(pow(position.x - 196.5,2) + pow(position.z - 167.5,2)) < 27.0f)
+		return true;
+	else
+		return false;
+}
+
+
 int check_collision_checkpoint()
 {
 	int i;
@@ -986,11 +999,12 @@ void OnTimer(int value)
 	if (checkpoint_id != -1) // CHECKPOINT TAKEN
 	{
 		checkpoints[checkpoint_id].taken = true;
-		if (check_win())
+		if (check_win()) // GAME WON
 		{
 			noclip = true;
 		}
 	}
+
 
 	float collision_factor, sideways_factor;
 	if (collision_object && !noclip)
@@ -1019,22 +1033,25 @@ void OnTimer(int value)
 	}
 
 
+	if (check_in_lake())
+		player_speed = PLAYER_SPEED/2;
+	else
+		player_speed = PLAYER_SPEED;
 	if (glutKeyIsDown('e') && glutKeyIsDown('w')){ // Sprint (Shift)
 			if (SUPER_SPRINT)
-				player_speed = PLAYER_SPEED * SPRINT * 5;
+				player_speed *= SPRINT * 5;
 			else
-				player_speed = PLAYER_SPEED * SPRINT;
+				player_speed *= SPRINT;
 			player_height = PLAYER_HEIGHT;
 	}
 	else
 	{
 		if (glutKeyIsDown('c')){ // Crouching
-				player_speed = PLAYER_SPEED / 2;
+				player_speed /= 2;
 				player_height = PLAYER_HEIGHT / 2;
 		}
 		else
 		{
-				player_speed = PLAYER_SPEED;
 				player_height = PLAYER_HEIGHT;
 		}
 	}
@@ -1121,7 +1138,7 @@ void OnTimer(int value)
 
 
 	if (glutKeyIsDown(32)){ // jump (Space)
-		if (collision_ground || noclip) // Jump only if touching ground
+		if ((collision_ground && !check_in_lake()) || noclip) // Jump only if touching ground
 		{
 				jumping = true;
 				collision_ground = false;
