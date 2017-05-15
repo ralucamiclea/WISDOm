@@ -30,8 +30,8 @@
 #define NOCLIP false
 #define SUPER_SPRINT true
 
-#define MAP_SIZE 1024                
-#define TEP_SIZE 16 
+#define MAP_SIZE 1024
+#define TEP_SIZE 16
 
 
 
@@ -529,7 +529,7 @@ void init(void)
 	LoadTGATextureSimple("../tex/stone.tga", &stone_tex);
 	LoadTGATextureSimple("../tex/rock1.tga", &rock_tex);
 	LoadTGATextureSimple("../tex/lotus.tga", &lotus_tex);
-	
+
 	LoadTGATextureSimple("../tex/dog.tga", &dog_tex);
 	LoadTGATextureSimple("../tex/deer.tga", &deer_tex);
 	LoadTGATextureSimple("../tex/bear.tga", &bear_tex);
@@ -556,13 +556,13 @@ void init(void)
 	rock = LoadModelPlus("../obj/house.obj");
 	stone2 = LoadModelPlus("../obj/house.obj");
 	stonewall = LoadModelPlus("../obj/house.obj");
-	
+
 	tree = LoadModelPlus("../obj/tree.obj");
 	lotus = LoadModelPlus("../obj/lotus.obj");
 	rose = LoadModelPlus("../obj/rose.obj");
 	cartoontree = LoadModelPlus("../obj/cartoontree.obj");
 	ocean = LoadModelPlus("../obj/ocean.obj");
-	
+
 	dog = LoadModelPlus("../obj/dog.obj");
 	bunny = LoadModelPlus("../obj/bunny.obj");
 	deer = LoadModelPlus("../obj/deer-obj.obj");
@@ -570,7 +570,7 @@ void init(void)
 	boar = LoadModelPlus("../obj/boar-obj.obj");
 	wolf = LoadModelPlus("../obj/wolf-obj.obj");
 	ant = LoadModelPlus("../obj/ant.obj");
-	
+
 
 	dumpInfo();
 
@@ -715,7 +715,7 @@ void display(void)
 	translation = T(0,0,0);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "translation"), 1, GL_TRUE, translation.m);
 	glUniformMatrix4fv(glGetUniformLocation(terrain_program, "camera"), 1, GL_TRUE, camera_placement.m);
-	
+
 	// Bind to texture units
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, grass_tex);
@@ -729,10 +729,10 @@ void display(void)
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, map);
 	glUniform1i(glGetUniformLocation(terrain_program, "map"), 3);
-	
+
 	DrawModel(terrain, terrain_program, "in_Position", "in_Normal", "inTexCoord");
 
-	glActiveTexture(GL_TEXTURE0); 
+	glActiveTexture(GL_TEXTURE0);
 
 	//draw reward
 	printError("reward");
@@ -838,7 +838,7 @@ void display(void)
 	pos.y = 0;
 	pos.z = 10;
 	draw(1,6,1,pos,45,1,wolf,program,0);
-	
+
 	//lotus
 	glBindTexture(GL_TEXTURE_2D, lotus_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit"), 0);
@@ -873,8 +873,19 @@ vec3 check_collision_objects(float dist)
 
 			float point = a * position.z + b;
 			bool player_near_wall = (point > position.x && point < position.x + dist) || (point < position.x && point > position.x - dist);
-			// TODO: FIX THAT, VERIFY THAT THE PLAYER IS IN FRONT OF THE WALL
-			if (player_near_wall) // If player is within a "dist" distance from the line
+			bool horizontal_wall = (x2-x1) < 1; // Wall roughly on Z axis
+			bool vertical_wall = (z2-z1) < 1; // Wall roughly on X axis
+			bool player_in_front_wall = (position.x < MAX(x1, x2) && position.x > MIN(x1, x2) && position.z < MAX(z1, z2) && position.z > MIN(z1, z2));
+			if (horizontal_wall)
+			{
+					player_in_front_wall = (position.z < MAX(z1, z2) && position.z > MIN(z1, z2));
+			}
+			else if (vertical_wall)
+			{
+					player_in_front_wall = (position.x < MAX(x1, x2) && position.x > MIN(x1, x2));
+			}
+
+			if (player_near_wall && player_in_front_wall) // If player is within a "dist" distance from the line
 			{
 				if (position.y > y && position.y < y+walls[i].height) {
 					vec3 out = {x2-x1,0,z2-z1};
@@ -1174,12 +1185,9 @@ int main(int argc, char *argv[]){
 	create_wall(texWidth-1, -20, texWidth-1, texWidth-1, -20, 0, 100); // Z Axis
 	create_wall(0, -20, texWidth-1, texWidth-1, -20, texWidth-1, 100); // X Axis
 
-	create_ground(99, 99, 101, 101, 15);
-	create_wall(99, 12.75, 99, 100, 12.75, 99, 1);
-
 
 	loadTextures(); //for skybox
-	
+
 	glutTimerFunc(20, &OnTimer, 0);
 	glutMainLoop();
 	return 0;
