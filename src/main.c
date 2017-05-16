@@ -90,14 +90,14 @@ Model *terrain, *tree, *lotus, *rose, *cartoontree, *ocean;
 GLuint grass_tex, leaves_tex, wood_tex, lotus_tex, water_tex;
 
 Model *ring, *cube, *house, *hangars, *rock, *stone, *stone2, *stonewall;
-GLuint dirt_tex, particle_tex, stone_tex, rock_tex, conc_tex;
+GLuint dirt_tex, particle_tex, stone_tex, rock_tex, conc_tex, dot_tex, minimap_tex;
 
 Model *dog, *bunny, *wolf, *ant;
 GLuint dog_tex, wolf_tex, fur_tex;
 
 TextureData terrain_tex;
 GLuint map;
-GLuint program, skybox_program, terrain_program, prize_program, particle_program; // Reference to shader program
+GLuint program, skybox_program, terrain_program, prize_program, particle_program, dot_program, minimap_program; // Reference to shader program
 
 //LIGHT sources
 Point3D lightSourcesColorsArr[] = { {1.0f, 0.0f, 0.0f}, // Red light
@@ -554,6 +554,164 @@ void display_billboarding(void){
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 }
+unsigned int vertexArrayObjID1;
+void init_billboarding_dot(void){
+
+	GLfloat vertices[] = {	0.52f,0.53f,0.0f,
+							0.52f,0.52f,0.0f,
+							0.53f,0.52f,0.0f,
+							0.52f, 0.53f,0.0f,
+							0.53f,0.52f,0.0f,
+							0.53f,0.53f,0.0f
+					};
+
+	// two vertex buffer objects, used for uploading the
+	unsigned int vertexBufferObjID1;
+	//unsigned int texCoordBufferObjID;
+	// GL inits
+	glDisable(GL_DEPTH_TEST);
+	printError("GL inits");
+
+
+	// Load and compile shader
+	dot_program = loadShaders("dot.vert", "dot.frag");
+	glUseProgram(dot_program);
+	printError("init shader");
+	// Upload geometry to the GPU:
+
+	// Allocate and activate Vertex Array Object
+	glGenVertexArrays(1, &vertexArrayObjID1);
+	glBindVertexArray(vertexArrayObjID1);
+	// Allocate Vertex Buffer Objects
+	glGenBuffers(1, &vertexBufferObjID1);
+	//glGenBuffers(1, &texCoordBufferObjID);
+
+	// VBO for vertex data
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjID1);
+	glBufferData(GL_ARRAY_BUFFER, 18*sizeof(GLfloat), vertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(glGetAttribLocation(dot_program, "in_Position"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(glGetAttribLocation(dot_program, "in_Position"));
+	//TEXTURE
+	printError("init vertex arrays");
+
+	LoadTGATextureSimple("../tex/dot-minimap.tga", &dot_tex);
+	glBindTexture(GL_TEXTURE_2D, dot_tex);
+	glUniform1i(glGetUniformLocation(dot_program, "tex"), 0); // Texture unit 0
+
+
+	printError("init arrays");
+}
+
+int dot_count = 1;
+void display_billboarding_dot(void){
+	glUseProgram(dot_program);
+	//put in displaz billboarding function
+	// clear the screen
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	mat4 trans;
+	float dot_position_x = ((position.x - 3)/255)*0.48;
+	float dot_position_y = ((position.z - 3)/255)*0.48;
+// The angle will be affected by the instance number so we pass the angle instead of  matrix.
+	trans = T(dot_position_x, dot_position_y, 0);
+	glUniformMatrix4fv(glGetUniformLocation(dot_program, "translation"), 1, GL_TRUE, trans.m);
+
+	glBindVertexArray(vertexArrayObjID1);	// Select VAO
+	glBindTexture(GL_TEXTURE_2D, dot_tex);
+// Draw the triangle 10 times!
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, dot_count);
+// instead of the usual
+//	glDrawArrays(GL_TRIANGLES, 0, 3);	// draw object
+
+	//put in displaz billboarding function
+	glDisable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+}
+///BACKGROUND MINIMAP
+unsigned int vertexArrayObjID2;
+void init_billboarding_minimap(void){
+
+	GLfloat vertices_mm[] = {	0.52f,1.0f,0.0f,
+												0.52f,0.52f,0.0f,
+												1.0f,0.52f,0.0f,
+												0.52f, 1.0f,0.0f,
+												1.0f,0.52f,0.0f,
+												1.0f,1.0f,0.0f};
+
+				//Color Matrix
+
+	// two vertex buffer objects, used for uploading the
+	unsigned int vertexBufferObjID2;
+	// GL inits
+	glDisable(GL_DEPTH_TEST);
+	printError("GL inits");
+
+
+	// Load and compile shader
+	minimap_program = loadShaders("minimap.vert", "minimap.frag");
+	glUseProgram(minimap_program);
+	printError("init shader");
+
+	// Upload geometry to the GPU:
+
+	// Allocate and activate Vertex Array Object
+	glGenVertexArrays(1, &vertexArrayObjID2);
+	glBindVertexArray(vertexArrayObjID2);
+	// Allocate Vertex Buffer Objects
+	glGenBuffers(1, &vertexBufferObjID2);
+	//glGenBuffers(1, &texCoordBufferObjID);
+
+	// VBO for vertex data
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjID2);
+	glBufferData(GL_ARRAY_BUFFER, 18*sizeof(GLfloat), vertices_mm, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(glGetAttribLocation(minimap_program, "in_Position"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(glGetAttribLocation(minimap_program, "in_Position"));
+	//TEXTURE
+	printError("init vertex arrays");
+
+
+	LoadTGATextureSimple("../tex/fft-terrain-minimap-65.tga", &minimap_tex);
+	glBindTexture(GL_TEXTURE_2D, minimap_tex);
+	glUniform1i(glGetUniformLocation(minimap_program, "tex"), 0); // Texture unit 0
+
+	printError("init arrays");
+
+}
+
+int minimap_count = 1;
+//GLfloat slope = 0.8;
+void display_billboarding_minimap(void){
+	glUseProgram(minimap_program);
+	//put in displaz billboarding function
+	// clear the screen
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	mat4 trans;
+// The angle will be affected by the instance number so we pass the angle instead of  matrix.
+	trans = T(0, 0, 0);
+	glUniformMatrix4fv(glGetUniformLocation(minimap_program, "translation"), 1, GL_TRUE, trans.m);
+	//glUniform1f(glGetUniformLocation(minimap_program, "slope"), slope);
+	glBindVertexArray(vertexArrayObjID2);	// Select VAO
+	glBindTexture(GL_TEXTURE_2D, minimap_tex);
+// Draw the triangle 10 times!
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, minimap_count);
+
+	//put in displaz billboarding function
+	glDisable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+}
 
 void init(void)
 {
@@ -618,6 +776,8 @@ void init(void)
 	glutInitDisplayMode(GLUT_DEPTH);
 	glDisable(GL_DEPTH_TEST);
 	init_billboarding();
+	init_billboarding_dot();
+	init_billboarding_minimap();
 
 	glDisable(GL_CULL_FACE);
 	printError("GL inits");
@@ -647,6 +807,12 @@ void init(void)
 	glUseProgram(particle_program);
 	glUniformMatrix4fv(glGetUniformLocation(particle_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 
+	glUseProgram(dot_program);
+	glUniformMatrix4fv(glGetUniformLocation(dot_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
+	glEnable(GL_DEPTH_TEST);
+
+	glUseProgram(minimap_program);
+	glUniformMatrix4fv(glGetUniformLocation(minimap_program, "frustum"), 1, GL_TRUE, frustum_matrix.m);
 	glEnable(GL_DEPTH_TEST);
 }
 
@@ -815,10 +981,10 @@ void display(void)
 		pos.y = 0;
 		pos.z = dog_pos[i+1];
 		scaling = S(dog_info[i],dog_info[i],dog_info[i]);
-		draw(1,6,0,pos,dog_info[i+1],1,dog,program,0);		
+		draw(1,6,0,pos,dog_info[i+1],1,dog,program,0);
 	}
 
-	
+
 	//trees
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, leaves_tex);
@@ -832,7 +998,7 @@ void display(void)
 		pos.y = 0;
 		pos.z = tree_pos[i+1];
 		scaling = S(tree_info[i],tree_info[i],tree_info[i]);
-		draw(1,55,-1,pos,tree_info[i+1],1,tree,program,0);		
+		draw(1,55,-1,pos,tree_info[i+1],1,tree,program,0);
 	}
 
 	//bunny
@@ -851,7 +1017,7 @@ void display(void)
 		draw(1,6,1+jump/bunny_info[i],pos,bunny_info[i+1],1,bunny,program,0);
 	}
 	jump_animation();
-	
+
 
 	//lotus
 	glActiveTexture(GL_TEXTURE4);
@@ -868,7 +1034,7 @@ void display(void)
 		pos.z = lotus_positions[2*i+1];
 		draw(1,0,0,pos,sin(t),1,lotus,program,0);
 	}
-	
+
 	//wolf
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, wolf_tex);
@@ -882,9 +1048,9 @@ void display(void)
 		pos.y = 0;
 		pos.z = wolf_pos[i+1];
 		scaling = S(wolf_info[i],wolf_info[i],wolf_info[i]);
-		draw(1,6,0,pos,wolf_info[i+1],1,wolf,program,0);		
+		draw(1,6,0,pos,wolf_info[i+1],1,wolf,program,0);
 	}
-	
+
 	//house
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, conc_tex);
@@ -898,9 +1064,9 @@ void display(void)
 		pos.y = 0;
 		pos.z = house_pos[i+1];
 		scaling = S(house_info[i],house_info[i],house_info[i]);
-		draw(1,6,4,pos,house_info[i+1],1,house,program,0);		
+		draw(1,6,4,pos,house_info[i+1],1,house,program,0);
 	}
-	
+
 	//stonewall
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, stone_tex);
@@ -914,7 +1080,7 @@ void display(void)
 		pos.y = 0;
 		pos.z = wall_pos[i+1];
 		scaling = S(wall_pos[i+2],1,1);
-		draw(1,6,1,pos,2,1,stonewall,program,0);	
+		draw(1,6,1,pos,2,1,stonewall,program,0);
 	}
 
 	//ants
@@ -930,13 +1096,19 @@ void display(void)
 		pos.y = 0;
 		pos.z = ant_info[i+1];
 		scaling = S(0.4,0.4,0.4);
-		draw(1,3,0,pos,t/ant_info[i+2],1,ant,program,0);		
+		draw(1,3,0,pos,t/ant_info[i+2],1,ant,program,0);
 	}
-	
+
 	glActiveTexture(GL_TEXTURE0); //just in case
 
 	glUseProgram(particle_program);
 	//display_billboarding();
+	// display the background of the minimap
+	glUseProgram(minimap_program);
+	display_billboarding_minimap();
+	//display the dot
+	glUseProgram(dot_program);
+	display_billboarding_dot();
 
 	glutSwapBuffers();
 }
