@@ -79,7 +79,7 @@ static float lotus_positions [] = {179, 155, 176, 170, 184, 165, 200, 159, 200, 
 static bool noclip = NOCLIP;
 static float player_height = PLAYER_HEIGHT;
 static float player_speed = PLAYER_SPEED;
-bool collision_ground, collision_object, jumping;
+bool collision_ground, collision_object, jumping, corner;
 int time_air;
 
 float angle; //angle of rotation for the camera direction
@@ -1013,6 +1013,28 @@ void draw(int edge_val, float distance_offset, float origin_offset, vec3 pos, in
 	}
 }
 
+int amount_taken_checkpoints()
+{
+	int i;
+	int n = 0;
+	for (i = 0; i < n_checkpoints; i++)
+	{
+		if (checkpoints[i].taken == true)
+			n++;
+	}
+	return n;
+}
+
+bool check_win()
+{
+	if (amount_taken_checkpoints() == CHECKPOINT_AMOUNT)
+	{
+		return true;
+	}
+	return false;
+}
+
+
 void display(void)
 {
 	vec3 pos = {0,0,0};
@@ -1249,7 +1271,8 @@ void display(void)
 	glActiveTexture(GL_TEXTURE0); //just in case
 
 	glUseProgram(particle_program);
-	display_billboarding();
+	if (check_win())
+		display_billboarding();
 	// display the background of the minimap
 	glUseProgram(minimap_program);
 	display_billboarding_minimap();
@@ -1300,6 +1323,8 @@ int check_collision_checkpoint()
 vec3 check_collision_objects(float dist)
 {
 	int i;
+	int n_col = 0;
+	vec3 out = {0,0,0};
 	for (i = 0; i < n_walls; i++)
 	{
 		// x = az + b
@@ -1331,9 +1356,10 @@ vec3 check_collision_objects(float dist)
 			if (player_near_wall && player_in_front_wall)
 			{
 				if (position.y - player_height > y && position.y - player_height < y+walls[i].height) {
-						vec3 out = {x2-x1,0,z2-z1};
+						out.x += x2-x1;
+						out.z += z2-z1;
 						collision_object = true;
-						return Normalize(out);
+						n_col++;
 					}
 			}
 		}
@@ -1344,17 +1370,21 @@ vec3 check_collision_objects(float dist)
 			if (player_near_wall && player_in_front_wall)
 			{
 				if (position.y - 1.5*player_height > y && position.y - 1.5*player_height < y+walls[i].height) {
-					vec3 out = {x2-x1,0,0}; // Necessary for the orientation of the wall
-					out = Normalize(out);
+					out.x = x2-x1; // Necessary for the orientation of the wall
 					collision_object = true;
-					return Normalize(out);
+					n_col++;
 				}
 			}
 		}
 
 	}
-	vec3 out = Normalize(direction);
-	collision_object = false;
+	if (n_col == 0) {
+		out = direction;
+		collision_object = false;
+	}
+	else if (n_col > 1)
+		corner = true;
+	out = Normalize(out);
 	return out;
 }
 
@@ -1363,26 +1393,7 @@ float dot(vec3 v1, vec3 v2)
 	return v1.x * v2.x + v1.z * v2.z;
 }
 
-int amount_taken_checkpoints()
-{
-	int i;
-	int n = 0;
-	for (i = 0; i < n_checkpoints; i++)
-	{
-		if (checkpoints[i].taken == true)
-			n++;
-	}
-	return n;
-}
 
-bool check_win()
-{
-	if (amount_taken_checkpoints() == CHECKPOINT_AMOUNT)
-	{
-		return true;
-	}
-	return false;
-}
 
 //CONTROLS
 void OnTimer(int value)
@@ -1443,6 +1454,16 @@ void OnTimer(int value)
 	}
 
 
+	if (corner)
+		player_speed = 0;
+	/*else
+		player_speed = PLAYER_SPEED;*/
+
+	if (corner)
+		printf("corner\n");
+	else
+		printf("\n");
+
 	if (check_in_lake())
 		player_speed = PLAYER_SPEED/2;
 	else
@@ -1466,8 +1487,17 @@ void OnTimer(int value)
 		}
 	}
 
-
 	if (glutKeyIsDown('w')){ //move camera forward
+		if (corner)
+		{
+			vec3 reverse = collision_vector;
+			reverse.x *= -1;
+			reverse.z *= -1;
+			reverse = Normalize(reverse);
+			printf("%f\n",dot(rotated_direction,reverse));
+			if (dot(rotated_direction,reverse) < -0.7) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
+				corner = false;
+		}
 		if (dot(rotated_direction,collision_vector) > 0) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 		{
 			collision_factor = 1;
@@ -1699,6 +1729,7 @@ int main(int argc, char *argv[]){
 	time_air = 0;
 	collision_ground = false;
 	collision_object = false;
+	corner = false;
 	jumping = false;
 	n_walls = 0;
 
