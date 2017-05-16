@@ -762,8 +762,8 @@ void display_billboarding_dot(void){
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	mat4 trans;
-	float dot_position_x = ((position.z - 3)/255)*0.48;
-	float dot_position_y = ((position.x - 3)/255)*0.48;
+	float dot_position_x = ((position.x - 3)/255)*0.48;
+	float dot_position_y = ((position.z - 3)/255)*0.48;
 // The angle will be affected by the instance number so we pass the angle instead of  matrix.
 	trans = T(dot_position_x, dot_position_y, 0);
 	glUniformMatrix4fv(glGetUniformLocation(dot_program, "translation"), 1, GL_TRUE, trans.m);
@@ -824,7 +824,7 @@ void init_billboarding_minimap(void){
 	printError("init vertex arrays");
 
 
-	LoadTGATextureSimple("../tex/fft-terrain-minimap-65-color.tga", &minimap_tex);
+	LoadTGATextureSimple("../tex/fft-terrain-minimap-65.tga", &minimap_tex);
 	glBindTexture(GL_TEXTURE_2D, minimap_tex);
 	glUniform1i(glGetUniformLocation(minimap_program, "tex"), 0); // Texture unit 0
 
@@ -1363,16 +1363,25 @@ float dot(vec3 v1, vec3 v2)
 	return v1.x * v2.x + v1.z * v2.z;
 }
 
+int amount_taken_checkpoints()
+{
+	int i;
+	int n = 0;
+	for (i = 0; i < n_checkpoints; i++)
+	{
+		if (checkpoints[i].taken == true)
+			n++;
+	}
+	return n;
+}
 
 bool check_win()
 {
-	int i;
-	for (i = 0; i < n_checkpoints; i++)
+	if (amount_taken_checkpoints() == CHECKPOINT_AMOUNT)
 	{
-		if (checkpoints[i].taken == false)
-			return false;
+		return true;
 	}
-	return true;
+	return false;
 }
 
 //CONTROLS
@@ -1401,6 +1410,7 @@ void OnTimer(int value)
 		checkpoints_display[checkpoint_id] = false;
 		if (check_win()) // GAME WON
 		{
+			// ACTIVATE FIREWORKS
 			noclip = true;
 		}
 	}
@@ -1667,12 +1677,6 @@ void create_high_box_no_top(float x, float y, float z, float size, float height)
 	create_wall(x-size, y, z+size, x-size, y, z-size, height);
 }
 
-void create_double_wall(float x1, float y1, float z1, float x2, float y2, float z2, float height)
-{
-	float offset = 0.1f;
-	create_wall(x1+offset, y1, z1-offset, x2+offset, y2, z2+offset, height);
-	create_wall(x1-offset, y1, z1-offset, x2-offset, y2, z2+offset, height);
-}
 
 void create_box(float x, float y, float z, float size)
 {
@@ -1730,7 +1734,18 @@ int main(int argc, char *argv[]){
 		create_high_box_no_top(bunny_pos[2*id], 0, bunny_pos[2*id+1], 3, 10);
 	}
 
-	create_double_wall(5, 0, 5, 5, 0, 20, 10);
+	//HOUSE
+	//fences
+	create_wall(100.5, 0, 112.6, 87.5, 0, 112.6, 5);
+	create_wall(87.5, 0, 112.5, 100.5, 0, 112.5, 5);
+	create_wall(87.5, 0, 112.6, 87.5, 0, 107.6, 5);
+	create_wall(87.6, 0, 107.6, 87.6, 0, 112.6, 5);
+
+	//house
+	create_wall(87, 0, 107.7, 87, 0, 92.2, 20);
+	create_wall(87, 0, 92.2, 112.8, 0, 92.2, 20);
+	create_wall(112.8, 0, 92.2, 112.8, 0, 107.7, 20);
+	create_wall(112.8, 0, 107.7, 87, 0, 107.7, 20);
 
 	loadTextures(); //for skybox
 
