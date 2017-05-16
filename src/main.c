@@ -35,6 +35,8 @@
 
 #define CHECKPOINT_SIZE 3
 
+#define PARTICLES_COUNT 10000
+
 
 // Globals
 vec3 position = {3.0,10.0,3.0};
@@ -210,10 +212,10 @@ struct particle
     vec3 velocity;//velocity + direction
 	vec4 color;
 };
-const int particle_count = 10000;
-struct particle particles_array[particle_count];
-vec3 particle_position[particle_count] = {};
-vec4 particle_color[particle_count] = {};
+
+struct particle particles_array[PARTICLES_COUNT];
+vec3 particle_position[PARTICLES_COUNT] = {};
+vec4 particle_color[PARTICLES_COUNT] = {};
 
 GLuint cubemap;
 
@@ -535,7 +537,8 @@ void init_billboarding(void){
 
 	srand(time(NULL));
 	//initialize each particle
-	for(int i=0; i<particle_count; i++){
+	int i;
+	for(i=0; i<PARTICLES_COUNT; i++){
 		particles_array[i].pos = (vec3){40,70,40};
 		particles_array[i].velocity.x = ((rand() % 100) - 50) /10.0;
 		particles_array[i].velocity.y = ((rand() % 100) - 50) /10.0;
@@ -610,8 +613,9 @@ void display_billboarding(void){
 
 
 	//initialize each particle
-	for(int i=0; i<particle_count; i++){
-		if(dead_particles>=particle_count-1){ //if particle is dead reinitialize
+	int i;
+	for(i=0; i<PARTICLES_COUNT; i++){
+		if(dead_particles>=PARTICLES_COUNT-1){ //if particle is dead reinitialize
 			//particles_array[i].pos = (vec3){10,60,10};
 			particles_array[i].pos.x = explosion_pos.x;
 			particles_array[i].pos.y = explosion_pos.y;
@@ -626,7 +630,7 @@ void display_billboarding(void){
 			particles_array[i].color.z = explosion_color.z; //fade
 
 			//happens once per explosion
-			if(dead_particles >= particle_count-1 && i == particle_count-1){
+			if(dead_particles >= PARTICLES_COUNT-1 && i == PARTICLES_COUNT-1){
 				dead_particles = 0;
 
 				explosion_pos.x = (rand() % 100) ;
@@ -658,7 +662,7 @@ void display_billboarding(void){
 
 
 	//write data into buffer
-	for(int i=0; i<particle_count; i++){
+	for(i=0; i<PARTICLES_COUNT; i++){
 		particle_position[i]=particles_array[i].pos;
 		particle_color[i].x = particles_array[i].color.x;
 		particle_color[i].y = 1;
@@ -671,7 +675,7 @@ void display_billboarding(void){
 
 
 	//sort array of struct for the blending to work correctly
-	qsort(particles_array, particle_count, sizeof(struct particle), compare);
+	qsort(particles_array, PARTICLES_COUNT, sizeof(struct particle), compare);
 
 	//put in display billboarding function
 	glDisable(GL_CULL_FACE);
@@ -684,12 +688,12 @@ void display_billboarding(void){
 	//select buffers
 	glBindVertexArray(vertexArrayObjID);	// Select VAO
 	glBindBuffer(GL_ARRAY_BUFFER, position_buffer);
-	glBufferData(GL_ARRAY_BUFFER, particle_count*sizeof(vec3), particle_position, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, PARTICLES_COUNT*sizeof(vec3), particle_position, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, att_buffer);
-	glBufferData(GL_ARRAY_BUFFER, particle_count*sizeof(vec4), particle_color, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, PARTICLES_COUNT*sizeof(vec4), particle_color, GL_DYNAMIC_DRAW);
 	glBindTexture(GL_TEXTURE_2D, particle_tex);
 	// Draw the triangle particle_count times!
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 3, particle_count);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 3, PARTICLES_COUNT);
 
 
 	//put in displaz billboarding function
