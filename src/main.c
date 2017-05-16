@@ -550,7 +550,6 @@ void init_billboarding(void){
 		particle_color[i].w = (rand() % 100) /100.0;
 	}
 
-	printf("position :(%f, %f, %f)\n", particles_array[0].velocity.x, particles_array[0].velocity.y, particles_array[0].velocity.z);
 
 	// Upload geometry to the GPU:
 
@@ -1390,6 +1389,12 @@ int check_collision_checkpoint()
 	return -1;
 }
 
+vec3 vect_prod(vec3 v1, vec3 v2)
+{
+	vec3 out = {v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v2.z*v1.x,v1.x*v2.y - v1.y*v2.x};
+	return out;
+}
+
 vec3 check_collision_objects(float dist)
 {
 	int i;
@@ -1547,19 +1552,6 @@ void OnTimer(int value)
 	}
 
 	if (glutKeyIsDown('w')){ //move camera forward
-		if (corner)
-		{
-			vec3 reverse = collision_vector;
-			reverse.x *= -1;
-			reverse.z *= -1;
-			reverse = Normalize(reverse);
-			printf("%f\n",dot(rotated_direction,reverse));
-			if (dot(rotated_direction,reverse) < -0.7) { // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
-				corner = false;
-			}
-		}
-		if (corner)
-			player_speed = 0;
 		if (dot(rotated_direction,collision_vector) > 0) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 		{
 			collision_factor = 1;
@@ -1825,6 +1817,10 @@ int main(int argc, char *argv[]){
 	for (id = 0; id < BUNNY_AMOUNT; id++)
 	{
 		create_high_box_no_top(bunny_pos[2*id], 0, bunny_pos[2*id+1], 3, 10);
+	}
+	for (id = 0; id < WOLF_AMOUNT; id++)
+	{
+		create_high_box(wolf_pos[2*id], 0, wolf_pos[2*id+1], 3, 5);
 	}
 
 	//HOUSE
