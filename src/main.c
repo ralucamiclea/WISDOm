@@ -1343,10 +1343,6 @@ int main(int argc, char *argv[]){
 	create_wall(0, -20, texWidth-1, texWidth-1, -20, texWidth-1, 100); // X Axis
 
 
-	create_box(10, 0, 10, 3.5);
-
-	create_wall(0, 0, 10, 10, 0, 0, 10);
-
 	int cid;
 	for (cid = 0; cid < CHECKPOINT_AMOUNT; cid++)
 	{
