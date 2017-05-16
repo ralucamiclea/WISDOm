@@ -550,6 +550,7 @@ void init_billboarding(void){
 		particle_color[i].w = (rand() % 100) /100.0;
 	}
 
+	printf("position :(%f, %f, %f)\n", particles_array[0].velocity.x, particles_array[0].velocity.y, particles_array[0].velocity.z);
 
 	// Upload geometry to the GPU:
 
@@ -852,68 +853,53 @@ void display_billboarding_minimap(void){
 	glEnable(GL_DEPTH_TEST);
 }
 ///CHECKPOINT COUNT
-
+/*
 unsigned int vertexArrayObjID3;
 void init_billboarding_cp(void){
-
 	GLfloat vertices_checkpoints[] = {	0.48f,1.0f,0.0f,
 												0.48f,0.96f,0.0f,
 												0.52f,0.96f,0.0f,
 												0.48f, 1.0f,0.0f,
 												0.52f,0.96f,0.0f,
 												0.52f,1.0f,0.0f};
-
 				//Color Matrix
-
+<<<<<<< HEAD
 	// two vertex buffer objects, used for uploading the
 	unsigned int vertexBufferObjID3;
 	// GL inits
 	glDisable(GL_DEPTH_TEST);
 	printError("GL inits");
-
-
 	// Load and compile shader
 	minimap_program = loadShaders("minimap.vert", "minimap.frag");
 	glUseProgram(minimap_program);
 	printError("init shader");
-
 	// Upload geometry to the GPU:
-
 	// Allocate and activate Vertex Array Object
 	glGenVertexArrays(1, &vertexArrayObjID3);
 	glBindVertexArray(vertexArrayObjID3);
 	// Allocate Vertex Buffer Objects
 	glGenBuffers(1, &vertexBufferObjID3);
 	//glGenBuffers(1, &texCoordBufferObjID);
-
 	// VBO for vertex data
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjID2);
 	glBufferData(GL_ARRAY_BUFFER, 18*sizeof(GLfloat), vertices_checkpoints, GL_STATIC_DRAW);
-
 	glVertexAttribPointer(glGetAttribLocation(minimap_program, "in_Position"), 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(glGetAttribLocation(minimap_program, "in_Position"));
 	//TEXTURE
 	printError("init vertex arrays");
-
-
 	LoadTGATextureSimple("../tex/fft-terrain-minimap-65-color.tga", &cp_tex);
 	glBindTexture(GL_TEXTURE_2D, minimap_tex);
 	glUniform1i(glGetUniformLocation(minimap_program, "tex"), 0); // Texture unit 0
-
 	printError("init arrays");
-
 }
-
 int minimap_count = 1;
 //GLfloat slope = 0.8;
 void display_billboarding_minimap(void){
 	glUseProgram(minimap_program);
-
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 	mat4 trans;
 // The angle will be affected by the instance number so we pass the angle instead of  matrix.
 	trans = T(0, 0, 0);
@@ -923,11 +909,57 @@ void display_billboarding_minimap(void){
 	glBindTexture(GL_TEXTURE_2D, minimap_tex);
 // Draw the triangle 10 times!
 	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, minimap_count);
-
+=======
+	// two vertex buffer objects, used for uploading the
+	unsigned int vertexBufferObjID3;
+	// GL inits
+	glDisable(GL_DEPTH_TEST);
+	printError("GL inits");
+	// Load and compile shader
+	minimap_program = loadShaders("minimap.vert", "minimap.frag");
+	glUseProgram(minimap_program);
+	printError("init shader");
+	// Upload geometry to the GPU:
+	// Allocate and activate Vertex Array Object
+	glGenVertexArrays(1, &vertexArrayObjID3);
+	glBindVertexArray(vertexArrayObjID3);
+	// Allocate Vertex Buffer Objects
+	glGenBuffers(1, &vertexBufferObjID3);
+	//glGenBuffers(1, &texCoordBufferObjID);
+	// VBO for vertex data
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjID2);
+	glBufferData(GL_ARRAY_BUFFER, 18*sizeof(GLfloat), vertices_checkpoints, GL_STATIC_DRAW);
+	glVertexAttribPointer(glGetAttribLocation(minimap_program, "in_Position"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(glGetAttribLocation(minimap_program, "in_Position"));
+	//TEXTURE
+	printError("init vertex arrays");
+	LoadTGATextureSimple("../tex/fft-terrain-minimap-65-color.tga", &cp_tex);
+	glBindTexture(GL_TEXTURE_2D, minimap_tex);
+	glUniform1i(glGetUniformLocation(minimap_program, "tex"), 0); // Texture unit 0
+	printError("init arrays");
+}
+int minimap_count = 1;
+//GLfloat slope = 0.8;
+void display_billboarding_minimap(void){
+	glUseProgram(minimap_program);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	mat4 trans;
+// The angle will be affected by the instance number so we pass the angle instead of  matrix.
+	trans = T(0, 0, 0);
+	glUniformMatrix4fv(glGetUniformLocation(minimap_program, "translation"), 1, GL_TRUE, trans.m);
+	//glUniform1f(glGetUniformLocation(minimap_program, "slope"), slope);
+	glBindVertexArray(vertexArrayObjID2);	// Select VAO
+	glBindTexture(GL_TEXTURE_2D, minimap_tex);
+// Draw the triangle 10 times!
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, minimap_count);
+>>>>>>> 51ad8beb65305cc9e7406299867c98e1f23fe563
 	glDisable(GL_BLEND);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
-}
+}*/
 void init(void)
 {
 	int i;
@@ -1388,12 +1420,6 @@ int check_collision_checkpoint()
 	return -1;
 }
 
-vec3 vect_prod(vec3 v1, vec3 v2)
-{
-	vec3 out = {v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v2.z*v1.x,v1.x*v2.y - v1.y*v2.x};
-	return out;
-}
-
 vec3 check_collision_objects(float dist)
 {
 	int i;
@@ -1551,6 +1577,19 @@ void OnTimer(int value)
 	}
 
 	if (glutKeyIsDown('w')){ //move camera forward
+		if (corner)
+		{
+			vec3 reverse = collision_vector;
+			reverse.x *= -1;
+			reverse.z *= -1;
+			reverse = Normalize(reverse);
+			printf("%f\n",dot(rotated_direction,reverse));
+			if (dot(rotated_direction,reverse) < -0.7) { // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
+				corner = false;
+			}
+		}
+		if (corner)
+			player_speed = 0;
 		if (dot(rotated_direction,collision_vector) > 0) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 		{
 			collision_factor = 1;
@@ -1816,10 +1855,6 @@ int main(int argc, char *argv[]){
 	for (id = 0; id < BUNNY_AMOUNT; id++)
 	{
 		create_high_box_no_top(bunny_pos[2*id], 0, bunny_pos[2*id+1], 3, 10);
-	}
-	for (id = 0; id < WOLF_AMOUNT; id++)
-	{
-		create_high_box(wolf_pos[2*id], 0, wolf_pos[2*id+1], 3, 5);
 	}
 
 	//HOUSE
