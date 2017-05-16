@@ -204,6 +204,17 @@ GLuint indices[6][6] =
 	{0, 2, 1, 0, 3, 2}
 };
 
+struct particle
+{
+    vec3 pos;//position
+    vec3 velocity;//velocity + direction
+	vec4 color;
+};
+const int particle_count = 10000;
+struct particle particles_array[particle_count];
+vec3 particle_position[particle_count] = {};
+vec4 particle_color[particle_count] = {};
+
 GLuint cubemap;
 
 // Select texture set by setting this constant to 0 or 6
@@ -477,7 +488,31 @@ void DrawModelInstanced(Model *m, GLuint program, char* vertexVariableName, char
 	}
 }
 
+
+int compare(const void *particle1, const void *particle2){
+
+	struct particle *p1 = (struct particle *)particle1;
+	struct particle *p2 = (struct particle *)particle2;
+
+	//first calculate distance to camera
+	vec3 vectocam1 = VectorSub(p1->pos,position);
+	float distance1 = sqrt(pow(vectocam1.x,2)+pow(vectocam1.y,2)+pow(vectocam1.z,2));
+	vec3 vectocam2 = VectorSub(p2->pos,position);
+	float distance2 = sqrt(pow(vectocam2.x,2)+pow(vectocam2.y,2)+pow(vectocam2.z,2));
+
+	//compare the structs
+	//return p1->pos - p2->pos;
+	if (distance1 < distance2)
+        return +1;
+    else if (distance1 > distance2)
+        return -1;
+    else
+        return 0;
+}
+
 unsigned int vertexArrayObjID; //use as input to the display_billboarding
+unsigned int position_buffer;
+unsigned int att_buffer;
 void init_billboarding(void){
 
 	GLfloat vertices[] = {	-0.5f,-0.5f,0.0f,
@@ -492,10 +527,27 @@ void init_billboarding(void){
 	printError("GL inits");
 
 
+
 	// Load and compile shader
 	particle_program = loadShaders("instancing.vert", "instancing.frag");
 	glUseProgram(particle_program);
 	printError("init shader");
+
+	srand(time(NULL));
+	//initialize each particle
+	for(int i=0; i<particle_count; i++){
+		particles_array[i].pos = (vec3){40,70,40};
+		particles_array[i].velocity.x = ((rand() % 100) - 50) /10.0;
+		particles_array[i].velocity.y = ((rand() % 100) - 50) /10.0;
+		particles_array[i].velocity.z = ((rand() % 100) - 50) /10.0;
+		particles_array[i].color.w = 0.0;
+
+		particle_color[i].y = (rand() % 100) /100.0;
+		particle_color[i].z = (rand() % 100) /100.0;
+		particle_color[i].w = (rand() % 100) /100.0;
+	}
+
+	printf("position :(%f, %f, %f)\n", particles_array[0].velocity.x, particles_array[0].velocity.y, particles_array[0].velocity.z);
 
 	// Upload geometry to the GPU:
 
@@ -511,49 +563,140 @@ void init_billboarding(void){
 	glVertexAttribPointer(glGetAttribLocation(particle_program, "in_Position"), 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(glGetAttribLocation(particle_program, "in_Position"));
 
-	// End of upload of geometry
 
+
+	//unsigned int model_matrix_buffer;
+
+	// Allocate Vertex Buffer Objects
+	glGenBuffers(1, &position_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, position_buffer);
+	//glBufferData(GL_ARRAY_BUFFER, particle_count*sizeof(vec3), particle_position, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(glGetAttribLocation(particle_program, "particle_position"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(glGetAttribLocation(particle_program, "particle_position"));
+	glVertexAttribDivisor(glGetAttribLocation(particle_program, "particle_position"), 1 );
+
+
+	// Allocate Vertex Buffer Objects
+	glGenBuffers(1, &att_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, att_buffer);
+	//glBufferData(GL_ARRAY_BUFFER, particle_count*sizeof(vec4), particle_color, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(glGetAttribLocation(particle_program, "particle_color"), 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(glGetAttribLocation(particle_program, "particle_color"));
+	glVertexAttribDivisor(glGetAttribLocation(particle_program, "particle_color"), 1 );
+
+
+	// End of upload of geometry
 	LoadTGATextureSimple("../tex/particles/star.tga", &particle_tex);
 	glBindTexture(GL_TEXTURE_2D, particle_tex);
 	glUniform1i(glGetUniformLocation(particle_program, "tex"), 0); // Texture unit 0
 
 
-	printError("init arrays");
-}
 
-int particle_count = 5;
+	printError("init arrays particle");
+
+
+
+}
 float particle_slope = 0;
 GLfloat particle_a=0.5;
+int dead_particles=0;
+vec3 explosion_pos;
+vec3 explosion_color;
 void display_billboarding(void){
+
 	glUseProgram(particle_program);
-	//put in displaz billboarding function
-	// clear the screen
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+	//initialize each particle
+	for(int i=0; i<particle_count; i++){
+		if(dead_particles>=particle_count-1){ //if particle is dead reinitialize
+			//particles_array[i].pos = (vec3){10,60,10};
+			particles_array[i].pos.x = explosion_pos.x;
+			particles_array[i].pos.y = explosion_pos.y;
+			particles_array[i].pos.z = explosion_pos.z;
+			particles_array[i].velocity.x = ((rand() % 100) - 50) /10.0;
+			particles_array[i].velocity.y = ((rand() % 100) - 50) /10.0;
+			particles_array[i].velocity.z = ((rand() % 100) - 50) /10.0;
+			//particles_array[i].color.w = (rand() % 100)/100.0; //fade
+			particles_array[i].color.w = 0.0; //fade
+			particles_array[i].color.x = explosion_color.x; //fade
+			particles_array[i].color.y = explosion_color.y; //fade
+			particles_array[i].color.z = explosion_color.z; //fade
+
+			//happens once per explosion
+			if(dead_particles >= particle_count-1 && i == particle_count-1){
+				dead_particles = 0;
+
+				explosion_pos.x = (rand() % 100) ;
+				explosion_pos.z = (rand() % 100);
+				explosion_pos.y = 60;
+
+				explosion_color.y = (rand() % 200 -100) /100.0;
+				explosion_color.z = (rand() % 200 -100) /100.0;
+				explosion_color.x = (rand() % 200 -100) /100.0;
+			}
+		}
+		else{
+			particles_array[i].pos.x += particles_array[i].velocity.x;
+			particles_array[i].pos.y += particles_array[i].velocity.y;
+			particles_array[i].pos.z += particles_array[i].velocity.z;
+			particles_array[i].velocity.x -= 0.2;
+			particles_array[i].velocity.y -= 0.2;
+			particles_array[i].velocity.z -= 0.2;
+			if(particles_array[i].color.w >= 1){
+				dead_particles++;
+			}
+			if(sqrt(particles_array[i].velocity.x*particles_array[i].velocity.x+particles_array[i].velocity.y*particles_array[i].velocity.y+particles_array[i].velocity.z*particles_array[i].velocity.z)<=0){
+				particles_array[i].color.w = 1;
+				dead_particles++;
+			}
+			particles_array[i].color.w += 0.05;
+		}
+	}
+
+
+	//write data into buffer
+	for(int i=0; i<particle_count; i++){
+		particle_position[i]=particles_array[i].pos;
+		particle_color[i].x = particles_array[i].color.x;
+		particle_color[i].y = 1;
+		particle_color[i].z = particles_array[i].color.z;
+		particle_color[i].w = particles_array[i].color.w;
+	}
+	//printf("position_triangle :(%f, %f, %f)\n", particles_array[0].pos.x, particles_array[0].pos.y, particles_array[0].pos.z);
+	//printf("position_gpu :(%f, %f, %f)\n", particle_position[0].x, particle_position[0].y, particle_position[0].z);
+	//printf("fade_gpu :()%f)\n", particle_color[0].x);
+
+
+	//sort array of struct for the blending to work correctly
+	qsort(particles_array, particle_count, sizeof(struct particle), compare);
+
+	//put in display billboarding function
 	glDisable(GL_CULL_FACE);
-	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	particle_a += 0.1;
-	mat4 rot, trans, total;
 
-// The angle will be affected by the instance number so we pass the angle instead of  matrix.
-	trans = T(sin(particle_a)/2, 0, 0);
-	glUniformMatrix4fv(glGetUniformLocation(particle_program, "translation"), 1, GL_TRUE, trans.m);
-	glUniform1f(glGetUniformLocation(particle_program, "angle"), particle_a);
-	glUniform1f(glGetUniformLocation(particle_program, "slope"), particle_slope);
+	// upload updated camera matrix.
+	glUniformMatrix4fv(glGetUniformLocation(particle_program, "camera"), 1, GL_TRUE, camera_placement.m);
 
+	//select buffers
 	glBindVertexArray(vertexArrayObjID);	// Select VAO
+	glBindBuffer(GL_ARRAY_BUFFER, position_buffer);
+	glBufferData(GL_ARRAY_BUFFER, particle_count*sizeof(vec3), particle_position, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, att_buffer);
+	glBufferData(GL_ARRAY_BUFFER, particle_count*sizeof(vec4), particle_color, GL_DYNAMIC_DRAW);
 	glBindTexture(GL_TEXTURE_2D, particle_tex);
-// Draw the triangle 10 times!
+	// Draw the triangle particle_count times!
 	glDrawArraysInstanced(GL_TRIANGLES, 0, 3, particle_count);
-// instead of the usual
-//	glDrawArrays(GL_TRIANGLES, 0, 3);	// draw object
+
 
 	//put in displaz billboarding function
 	glDisable(GL_BLEND);
 	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
 }
+
 unsigned int vertexArrayObjID1;
 void init_billboarding_dot(void){
 
@@ -1102,7 +1245,7 @@ void display(void)
 	glActiveTexture(GL_TEXTURE0); //just in case
 
 	glUseProgram(particle_program);
-	//display_billboarding();
+	display_billboarding();
 	// display the background of the minimap
 	glUseProgram(minimap_program);
 	display_billboarding_minimap();
@@ -1552,10 +1695,6 @@ int main(int argc, char *argv[]){
 	create_wall(texWidth-1, -20, texWidth-1, texWidth-1, -20, 0, 100); // Z Axis
 	create_wall(0, -20, texWidth-1, texWidth-1, -20, texWidth-1, 100); // X Axis
 
-
-	create_box(10, 0, 10, 3.5);
-
-	create_wall(0, 0, 10, 10, 0, 0, 10);
 
 	int cid;
 	for (cid = 0; cid < CHECKPOINT_AMOUNT; cid++)
