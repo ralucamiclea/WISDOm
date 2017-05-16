@@ -44,9 +44,9 @@ vec3 direction = {0.0,0.0,0.0};
 vec3 right = {0.0,0.0,0.0};
 vec3 up = {0.0,0.0,0.0};
 
-static float tree_pos [] = {200,60,190,65,190,68,210,50,200,55,190,60,175,68,165,70,170,50,175,55,175,57,200,53,210,60,170,50,180,40,190,35,190,80}; //pos.x and pos.z
-static float tree_info [] = {0.01,0,0.01,1,0.01,2, 0.02, 1,0.02,0,0.02,1, 0.02,2,0.01,2.5,0.01,2.5,0.01,0,0.01,1,0.01,2,0.01,1, 0.02, 2.5, 0.02, 2.5, 0.02, 2.5, 0.02, 1}; //scale and rotation angle
-#define TREES_AMOUNT 17
+static float tree_pos [] = {200,60,190,65,190,68,210,50,200,55,190,60,175,68,165,70,170,50,175,55,175,57,200,53,210,60,170,50,180,40,190,35,190,80,80,60,90,65,110,120,135,189,138,184,141,190}; //pos.x and pos.z
+static float tree_info [] = {0.01,0,0.01,1,0.01,2, 0.02, 1,0.02,0,0.02,1, 0.02,2,0.01,2.5,0.01,2.5,0.01,0,0.01,1,0.01,2,0.01,1, 0.02, 2.5, 0.02, 2.5, 0.02, 2.5, 0.02, 1,0.021, 0,0.015, 1,0.018, 0, 0.015,1, 0.022, 2.5, 0.026, 2.5}; //scale and rotation angle
+#define TREES_AMOUNT 23
 
 static float dog_pos [] = {89,175,90,225,93,175}; //pos.x and pos.z
 static float dog_info [] = {0.045,3.14,0.05,0,0.05,3.14}; //scale and rotation angle
@@ -864,6 +864,7 @@ void init_billboarding_cp(void){
 												0.52f,1.0f,0.0f};
 
 				//Color Matrix
+<<<<<<< HEAD
 
 	// two vertex buffer objects, used for uploading the
 	unsigned int vertexBufferObjID3;
@@ -924,6 +925,68 @@ void display_billboarding_minimap(void){
 // Draw the triangle 10 times!
 	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, minimap_count);
 
+=======
+
+	// two vertex buffer objects, used for uploading the
+	unsigned int vertexBufferObjID3;
+	// GL inits
+	glDisable(GL_DEPTH_TEST);
+	printError("GL inits");
+
+
+	// Load and compile shader
+	minimap_program = loadShaders("minimap.vert", "minimap.frag");
+	glUseProgram(minimap_program);
+	printError("init shader");
+
+	// Upload geometry to the GPU:
+
+	// Allocate and activate Vertex Array Object
+	glGenVertexArrays(1, &vertexArrayObjID3);
+	glBindVertexArray(vertexArrayObjID3);
+	// Allocate Vertex Buffer Objects
+	glGenBuffers(1, &vertexBufferObjID3);
+	//glGenBuffers(1, &texCoordBufferObjID);
+
+	// VBO for vertex data
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjID2);
+	glBufferData(GL_ARRAY_BUFFER, 18*sizeof(GLfloat), vertices_checkpoints, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(glGetAttribLocation(minimap_program, "in_Position"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(glGetAttribLocation(minimap_program, "in_Position"));
+	//TEXTURE
+	printError("init vertex arrays");
+
+
+	LoadTGATextureSimple("../tex/fft-terrain-minimap-65-color.tga", &cp_tex);
+	glBindTexture(GL_TEXTURE_2D, minimap_tex);
+	glUniform1i(glGetUniformLocation(minimap_program, "tex"), 0); // Texture unit 0
+
+	printError("init arrays");
+
+}
+
+int minimap_count = 1;
+//GLfloat slope = 0.8;
+void display_billboarding_minimap(void){
+	glUseProgram(minimap_program);
+
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	mat4 trans;
+// The angle will be affected by the instance number so we pass the angle instead of  matrix.
+	trans = T(0, 0, 0);
+	glUniformMatrix4fv(glGetUniformLocation(minimap_program, "translation"), 1, GL_TRUE, trans.m);
+	//glUniform1f(glGetUniformLocation(minimap_program, "slope"), slope);
+	glBindVertexArray(vertexArrayObjID2);	// Select VAO
+	glBindTexture(GL_TEXTURE_2D, minimap_tex);
+// Draw the triangle 10 times!
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, minimap_count);
+
+>>>>>>> 51ad8beb65305cc9e7406299867c98e1f23fe563
 
 	glDisable(GL_BLEND);
 	glEnable(GL_CULL_FACE);
@@ -1228,7 +1291,7 @@ void display(void)
 	glBindTexture(GL_TEXTURE_2D, leaves_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit1"), 4);
 	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, leaves_tex);
+	glBindTexture(GL_TEXTURE_2D, grass_tex);
 	glUniform1i(glGetUniformLocation(program, "texUnit2"), 5);
 	for (i = 0; i < TREES_AMOUNT * 2; i+=2)
 	{
@@ -1318,7 +1381,7 @@ void display(void)
 		pos.y = 0;
 		pos.z = wall_pos[i+1];
 		scaling = S(wall_pos[i+2],1,1);
-		draw(1,6,1,pos,2,1,stonewall,program,0);
+		draw(1,6,-1,pos,2,1,stonewall,program,0);
 	}
 
 	//ants
