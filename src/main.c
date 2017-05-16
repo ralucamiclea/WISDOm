@@ -61,7 +61,7 @@ static float wolf_info [] = {0.45,1,0.4,0}; //scale and rotation angle
 #define WOLF_AMOUNT 2
 
 static float house_pos [] = {100,100}; //pos.x and pos.z
-static float house_info [] = {7,1}; //scale and rotation angle
+static float house_info [] = {7,0}; //scale and rotation angle
 #define HOUSE_AMOUNT 1
 
 static float wall_pos [] = {140,184,2.4}; //pos.x and pos.z and scale.x
@@ -70,7 +70,7 @@ static float wall_pos [] = {140,184,2.4}; //pos.x and pos.z and scale.x
 static float ant_info [] = {110,190,1000, 110,193,500, 112,194,100, 113,191,900, 112,197,300, 115,191,800, 109,192,200, 112,196,400, 114,196,50, 115,190,600, 107,187,700}; //pos.x and pos.z and rotation
 #define ANT_AMOUNT 11
 
-static float checkpoints_positions [] = {87,90,93,195,163,180,8,90,195,44,241,120,241,15,115,100};
+static float checkpoints_positions [] = {98, 110,93,195,163,180,8,90,195,44,241,120,241,15,115,100};
 #define CHECKPOINT_AMOUNT 8
 
 static float lotus_positions [] = {179, 155, 176, 170, 184, 165, 200, 159, 200, 176, 209, 167};
@@ -760,8 +760,8 @@ void display_billboarding_dot(void){
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	mat4 trans;
-	float dot_position_x = ((position.z - 3)/255)*0.48;
-	float dot_position_y = ((position.x - 3)/255)*0.48;
+	float dot_position_x = ((position.x - 3)/255)*0.48;
+	float dot_position_y = ((position.z - 3)/255)*0.48;
 // The angle will be affected by the instance number so we pass the angle instead of  matrix.
 	trans = T(dot_position_x, dot_position_y, 0);
 	glUniformMatrix4fv(glGetUniformLocation(dot_program, "translation"), 1, GL_TRUE, trans.m);
@@ -819,7 +819,7 @@ void init_billboarding_minimap(void){
 	printError("init vertex arrays");
 
 
-	LoadTGATextureSimple("../tex/fft-terrain-minimap-65-color.tga", &minimap_tex);
+	LoadTGATextureSimple("../tex/fft-terrain-minimap-65.tga", &minimap_tex);
 	glBindTexture(GL_TEXTURE_2D, minimap_tex);
 	glUniform1i(glGetUniformLocation(minimap_program, "tex"), 0); // Texture unit 0
 
@@ -1432,16 +1432,25 @@ float dot(vec3 v1, vec3 v2)
 	return v1.x * v2.x + v1.z * v2.z;
 }
 
+int amount_taken_checkpoints()
+{
+	int i;
+	int n = 0;
+	for (i = 0; i < n_checkpoints; i++)
+	{
+		if (checkpoints[i].taken == true)
+			n++;
+	}
+	return n;
+}
 
 bool check_win()
 {
-	int i;
-	for (i = 0; i < n_checkpoints; i++)
+	if (amount_taken_checkpoints() == CHECKPOINT_AMOUNT)
 	{
-		if (checkpoints[i].taken == false)
-			return false;
+		return true;
 	}
-	return true;
+	return false;
 }
 
 //CONTROLS
@@ -1470,6 +1479,7 @@ void OnTimer(int value)
 		checkpoints_display[checkpoint_id] = false;
 		if (check_win()) // GAME WON
 		{
+			// ACTIVATE FIREWORKS
 			noclip = true;
 		}
 	}
@@ -1727,6 +1737,16 @@ void create_high_box(float x, float y, float z, float size, float height)
 	create_ground(x-size, z-size, x+size, z+size, height);
 }
 
+void create_high_box_no_top(float x, float y, float z, float size, float height)
+{
+	size = size/2;
+	create_wall(x-size, y, z-size, x+size, y, z-size, height);
+	create_wall(x+size, y, z-size, x+size, y, z+size, height);
+	create_wall(x+size, y, z+size, x-size, y, z+size, height);
+	create_wall(x-size, y, z+size, x-size, y, z-size, height);
+}
+
+
 void create_box(float x, float y, float z, float size)
 {
 	create_high_box(x, y, z, size, size);
@@ -1769,13 +1789,32 @@ int main(int argc, char *argv[]){
 	create_wall(0, -20, texWidth-1, texWidth-1, -20, texWidth-1, 100); // X Axis
 
 
-	int cid;
-	for (cid = 0; cid < CHECKPOINT_AMOUNT; cid++)
+	int id;
+	for (id = 0; id < CHECKPOINT_AMOUNT; id++)
 	{
-			create_checkpoint(checkpoints_positions[2*cid], 6.5, checkpoints_positions[2*cid+1]);
+			create_checkpoint(checkpoints_positions[2*id], 6.5, checkpoints_positions[2*id+1]);
+	}
+	for (id = 0; id < TREES_AMOUNT; id++)
+	{
+		create_high_box_no_top(tree_pos[2*id], 0, tree_pos[2*id+1], 100*tree_info[2*id], 40);
+	}
+	for (id = 0; id < BUNNY_AMOUNT; id++)
+	{
+		create_high_box_no_top(bunny_pos[2*id], 0, bunny_pos[2*id+1], 3, 10);
 	}
 
+	//HOUSE
+	//fences
+	create_wall(100.5, 0, 112.6, 87.5, 0, 112.6, 5);
+	create_wall(87.5, 0, 112.5, 100.5, 0, 112.5, 5);
+	create_wall(87.5, 0, 112.6, 87.5, 0, 107.6, 5);
+	create_wall(87.6, 0, 107.6, 87.6, 0, 112.6, 5);
 
+	//house
+	create_wall(87, 0, 107.7, 87, 0, 92.2, 20);
+	create_wall(87, 0, 92.2, 112.8, 0, 92.2, 20);
+	create_wall(112.8, 0, 92.2, 112.8, 0, 107.7, 20);
+	create_wall(112.8, 0, 107.7, 87, 0, 107.7, 20);
 
 	loadTextures(); //for skybox
 
