@@ -22,6 +22,8 @@ void main() {
 
 	int row = gl_InstanceID / edge;
 	vec4 offs = vec4(gl_InstanceID % edge, gl_InstanceID / edge, 0, 0);
+	
+	vec4 position = vec4(in_Position, 1.0) + offs * distance;
 
-	gl_Position = frustum * camera  * translation * rotation * scaling *  vec4(in_Position, 1.0) + offs * distance;
+	gl_Position = frustum * camera  * translation * rotation * scaling *  position;
 	}

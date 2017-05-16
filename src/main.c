@@ -35,7 +35,7 @@
 
 #define CHECKPOINT_SIZE 3
 
-#define PARTICLES_COUNT 10000
+#define PARTICLES_COUNT 1000
 
 
 // Globals
@@ -48,8 +48,8 @@ static float tree_pos [] = {200,60,190,65,190,68,210,50,200,55,190,60,175,68,165
 static float tree_info [] = {0.01,0,0.01,1,0.01,2, 0.02, 1,0.02,0,0.02,1, 0.02,2,0.01,2.5,0.01,2.5,0.01,0,0.01,1,0.01,2,0.01,1, 0.02, 2.5, 0.02, 2.5, 0.02, 2.5, 0.02, 1}; //scale and rotation angle
 #define TREES_AMOUNT 17
 
-static float dog_pos [] = {100,190,80,200,85,205}; //pos.x and pos.z
-static float dog_info [] = {0.045,1,0.05,0,0.05,2}; //scale and rotation angle
+static float dog_pos [] = {89,175,90,225,93,175}; //pos.x and pos.z
+static float dog_info [] = {0.045,3.14,0.05,0,0.05,3.14}; //scale and rotation angle
 #define DOGS_AMOUNT 3
 
 static float bunny_pos [] = {200,50,185,65,170,65,175,60,180,46}; //pos.x and pos.z
@@ -67,7 +67,7 @@ static float house_info [] = {7,0}; //scale and rotation angle
 static float wall_pos [] = {140,184,2.4}; //pos.x and pos.z and scale.x
 #define WALL_AMOUNT 1
 
-static float ant_info [] = {110,190,1000, 110,193,500, 112,194,100, 113,191,900, 112,197,300, 115,191,800, 109,192,200, 112,196,400, 114,196,50, 115,190,600, 107,187,700}; //pos.x and pos.z and rotation
+static float ant_info [] = {75,190,1000, 75,193,500, 76,194,100, 77,191,900, 76,197,300, 78,191,800, 74,192,200, 76,196,400, 77,196,250, 78,190,600, 73,187,700}; //pos.x and pos.z and rotation
 #define ANT_AMOUNT 11
 
 static float checkpoints_positions [] = {98, 110,93,195,163,180,8,90,195,44,241,120,241,15,115,100};
@@ -753,17 +753,15 @@ void init_billboarding_dot(void){
 int dot_count = 1;
 void display_billboarding_dot(void){
 	glUseProgram(dot_program);
-	//put in displaz billboarding function
-	// clear the screen
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	mat4 trans;
-	float dot_position_x = ((position.x - 3)/255)*0.48;
-	float dot_position_y = ((position.z - 3)/255)*0.48;
+	float dot_position_x = ((position.z - 3)/255)*0.48;
+	float dot_position_y = ((position.x - 3)/255)*0.48;
 // The angle will be affected by the instance number so we pass the angle instead of  matrix.
 	trans = T(dot_position_x, dot_position_y, 0);
 	glUniformMatrix4fv(glGetUniformLocation(dot_program, "translation"), 1, GL_TRUE, trans.m);
@@ -773,9 +771,6 @@ void display_billboarding_dot(void){
 // Draw the triangle 10 times!
 	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, dot_count);
 // instead of the usual
-//	glDrawArrays(GL_TRIANGLES, 0, 3);	// draw object
-
-	//put in displaz billboarding function
 	glDisable(GL_BLEND);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
@@ -824,7 +819,7 @@ void init_billboarding_minimap(void){
 	printError("init vertex arrays");
 
 
-	LoadTGATextureSimple("../tex/fft-terrain-minimap-65.tga", &minimap_tex);
+	LoadTGATextureSimple("../tex/fft-terrain-minimap-65-color.tga", &minimap_tex);
 	glBindTexture(GL_TEXTURE_2D, minimap_tex);
 	glUniform1i(glGetUniformLocation(minimap_program, "tex"), 0); // Texture unit 0
 
@@ -836,9 +831,7 @@ int minimap_count = 1;
 //GLfloat slope = 0.8;
 void display_billboarding_minimap(void){
 	glUseProgram(minimap_program);
-	//put in displaz billboarding function
-	// clear the screen
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -854,12 +847,89 @@ void display_billboarding_minimap(void){
 // Draw the triangle 10 times!
 	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, minimap_count);
 
-	//put in displaz billboarding function
+
 	glDisable(GL_BLEND);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 }
+///CHECKPOINT COUNT
+/*
+unsigned int vertexArrayObjID3;
+void init_billboarding_cp(void){
 
+	GLfloat vertices_checkpoints[] = {	0.48f,1.0f,0.0f,
+												0.48f,0.96f,0.0f,
+												0.52f,0.96f,0.0f,
+												0.48f, 1.0f,0.0f,
+												0.52f,0.96f,0.0f,
+												0.52f,1.0f,0.0f};
+
+				//Color Matrix
+
+	// two vertex buffer objects, used for uploading the
+	unsigned int vertexBufferObjID3;
+	// GL inits
+	glDisable(GL_DEPTH_TEST);
+	printError("GL inits");
+
+
+	// Load and compile shader
+	minimap_program = loadShaders("minimap.vert", "minimap.frag");
+	glUseProgram(minimap_program);
+	printError("init shader");
+
+	// Upload geometry to the GPU:
+
+	// Allocate and activate Vertex Array Object
+	glGenVertexArrays(1, &vertexArrayObjID3);
+	glBindVertexArray(vertexArrayObjID3);
+	// Allocate Vertex Buffer Objects
+	glGenBuffers(1, &vertexBufferObjID3);
+	//glGenBuffers(1, &texCoordBufferObjID);
+
+	// VBO for vertex data
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObjID2);
+	glBufferData(GL_ARRAY_BUFFER, 18*sizeof(GLfloat), vertices_checkpoints, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(glGetAttribLocation(minimap_program, "in_Position"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(glGetAttribLocation(minimap_program, "in_Position"));
+	//TEXTURE
+	printError("init vertex arrays");
+
+
+	LoadTGATextureSimple("../tex/fft-terrain-minimap-65-color.tga", &cp_tex);
+	glBindTexture(GL_TEXTURE_2D, minimap_tex);
+	glUniform1i(glGetUniformLocation(minimap_program, "tex"), 0); // Texture unit 0
+
+	printError("init arrays");
+
+}
+
+int minimap_count = 1;
+//GLfloat slope = 0.8;
+void display_billboarding_minimap(void){
+	glUseProgram(minimap_program);
+
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	mat4 trans;
+// The angle will be affected by the instance number so we pass the angle instead of  matrix.
+	trans = T(0, 0, 0);
+	glUniformMatrix4fv(glGetUniformLocation(minimap_program, "translation"), 1, GL_TRUE, trans.m);
+	//glUniform1f(glGetUniformLocation(minimap_program, "slope"), slope);
+	glBindVertexArray(vertexArrayObjID2);	// Select VAO
+	glBindTexture(GL_TEXTURE_2D, minimap_tex);
+// Draw the triangle 10 times!
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, minimap_count);
+
+
+	glDisable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+}*/
 void init(void)
 {
 	int i;
@@ -1150,7 +1220,7 @@ void display(void)
 		pos.y = 0;
 		pos.z = dog_pos[i+1];
 		scaling = S(dog_info[i],dog_info[i],dog_info[i]);
-		draw(1,6,0,pos,dog_info[i+1],1,dog,program,0);
+		draw(1,1,0,pos,dog_info[i+1],1,dog,program,0);
 	}
 
 
@@ -1265,7 +1335,7 @@ void display(void)
 		pos.y = 0;
 		pos.z = ant_info[i+1];
 		scaling = S(0.4,0.4,0.4);
-		draw(1,3,0,pos,t/ant_info[i+2],1,ant,program,0);
+		draw(2,15,0,pos,t/ant_info[i+2],1,ant,program,0);
 	}
 
 	glActiveTexture(GL_TEXTURE0); //just in case
