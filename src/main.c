@@ -61,7 +61,7 @@ static float wolf_info [] = {0.45,1,0.4,0}; //scale and rotation angle
 #define WOLF_AMOUNT 2
 
 static float house_pos [] = {100,100}; //pos.x and pos.z
-static float house_info [] = {7,1}; //scale and rotation angle
+static float house_info [] = {7,0}; //scale and rotation angle
 #define HOUSE_AMOUNT 1
 
 static float wall_pos [] = {140,184,2.4}; //pos.x and pos.z and scale.x
@@ -70,7 +70,7 @@ static float wall_pos [] = {140,184,2.4}; //pos.x and pos.z and scale.x
 static float ant_info [] = {110,190,1000, 110,193,500, 112,194,100, 113,191,900, 112,197,300, 115,191,800, 109,192,200, 112,196,400, 114,196,50, 115,190,600, 107,187,700}; //pos.x and pos.z and rotation
 #define ANT_AMOUNT 11
 
-static float checkpoints_positions [] = {87,90,93,195,163,180,8,90,195,44,241,120,241,15,115,100};
+static float checkpoints_positions [] = {98, 110,93,195,163,180,8,90,195,44,241,120,241,15,115,100};
 #define CHECKPOINT_AMOUNT 8
 
 static float lotus_positions [] = {179, 155, 176, 170, 184, 165, 200, 159, 200, 176, 209, 167};
@@ -1658,6 +1658,22 @@ void create_high_box(float x, float y, float z, float size, float height)
 	create_ground(x-size, z-size, x+size, z+size, height);
 }
 
+void create_high_box_no_top(float x, float y, float z, float size, float height)
+{
+	size = size/2;
+	create_wall(x-size, y, z-size, x+size, y, z-size, height);
+	create_wall(x+size, y, z-size, x+size, y, z+size, height);
+	create_wall(x+size, y, z+size, x-size, y, z+size, height);
+	create_wall(x-size, y, z+size, x-size, y, z-size, height);
+}
+
+void create_double_wall(float x1, float y1, float z1, float x2, float y2, float z2, float height)
+{
+	float offset = 0.1f;
+	create_wall(x1+offset, y1, z1-offset, x2+offset, y2, z2+offset, height);
+	create_wall(x1-offset, y1, z1-offset, x2-offset, y2, z2+offset, height);
+}
+
 void create_box(float x, float y, float z, float size)
 {
 	create_high_box(x, y, z, size, size);
@@ -1700,13 +1716,21 @@ int main(int argc, char *argv[]){
 	create_wall(0, -20, texWidth-1, texWidth-1, -20, texWidth-1, 100); // X Axis
 
 
-	int cid;
-	for (cid = 0; cid < CHECKPOINT_AMOUNT; cid++)
+	int id;
+	for (id = 0; id < CHECKPOINT_AMOUNT; id++)
 	{
-			create_checkpoint(checkpoints_positions[2*cid], 6.5, checkpoints_positions[2*cid+1]);
+			create_checkpoint(checkpoints_positions[2*id], 6.5, checkpoints_positions[2*id+1]);
+	}
+	for (id = 0; id < TREES_AMOUNT; id++)
+	{
+		create_high_box_no_top(tree_pos[2*id], 0, tree_pos[2*id+1], 100*tree_info[2*id], 40);
+	}
+	for (id = 0; id < BUNNY_AMOUNT; id++)
+	{
+		create_high_box_no_top(bunny_pos[2*id], 0, bunny_pos[2*id+1], 3, 10);
 	}
 
-
+	create_double_wall(5, 0, 5, 5, 0, 20, 10);
 
 	loadTextures(); //for skybox
 
