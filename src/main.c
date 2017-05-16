@@ -35,7 +35,7 @@
 
 #define CHECKPOINT_SIZE 3
 
-#define PARTICLES_COUNT 10000
+#define PARTICLES_COUNT 1000
 
 
 // Globals
@@ -48,8 +48,8 @@ static float tree_pos [] = {200,60,190,65,190,68,210,50,200,55,190,60,175,68,165
 static float tree_info [] = {0.01,0,0.01,1,0.01,2, 0.02, 1,0.02,0,0.02,1, 0.02,2,0.01,2.5,0.01,2.5,0.01,0,0.01,1,0.01,2,0.01,1, 0.02, 2.5, 0.02, 2.5, 0.02, 2.5, 0.02, 1}; //scale and rotation angle
 #define TREES_AMOUNT 17
 
-static float dog_pos [] = {100,190,80,200,85,205}; //pos.x and pos.z
-static float dog_info [] = {0.045,1,0.05,0,0.05,2}; //scale and rotation angle
+static float dog_pos [] = {89,175,90,225,93,175}; //pos.x and pos.z
+static float dog_info [] = {0.045,3.14,0.05,0,0.05,3.14}; //scale and rotation angle
 #define DOGS_AMOUNT 3
 
 static float bunny_pos [] = {200,50,185,65,170,65,175,60,180,46}; //pos.x and pos.z
@@ -67,7 +67,7 @@ static float house_info [] = {7,0}; //scale and rotation angle
 static float wall_pos [] = {140,184,2.4}; //pos.x and pos.z and scale.x
 #define WALL_AMOUNT 1
 
-static float ant_info [] = {110,190,1000, 110,193,500, 112,194,100, 113,191,900, 112,197,300, 115,191,800, 109,192,200, 112,196,400, 114,196,50, 115,190,600, 107,187,700}; //pos.x and pos.z and rotation
+static float ant_info [] = {75,190,1000, 75,193,500, 76,194,100, 77,191,900, 76,197,300, 78,191,800, 74,192,200, 76,196,400, 77,196,250, 78,190,600, 73,187,700}; //pos.x and pos.z and rotation
 #define ANT_AMOUNT 11
 
 static float checkpoints_positions [] = {98, 110,93,195,163,180,8,90,195,44,241,120,241,15,115,100};
@@ -1198,7 +1198,7 @@ void display(void)
 		pos.y = 0;
 		pos.z = dog_pos[i+1];
 		scaling = S(dog_info[i],dog_info[i],dog_info[i]);
-		draw(1,6,0,pos,dog_info[i+1],1,dog,program,0);
+		draw(1,1,0,pos,dog_info[i+1],1,dog,program,0);
 	}
 
 
@@ -1313,7 +1313,7 @@ void display(void)
 		pos.y = 0;
 		pos.z = ant_info[i+1];
 		scaling = S(0.4,0.4,0.4);
-		draw(1,3,0,pos,t/ant_info[i+2],1,ant,program,0);
+		draw(2,15,0,pos,t/ant_info[i+2],1,ant,program,0);
 	}
 
 	glActiveTexture(GL_TEXTURE0); //just in case
