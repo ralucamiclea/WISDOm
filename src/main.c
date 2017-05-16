@@ -10,6 +10,7 @@
 #include "../common/VectorUtils3.h"
 #include <math.h>
 
+
 #define HEIGHT 1000
 #define WIDTH 1000
 
@@ -35,7 +36,9 @@
 
 #define CHECKPOINT_SIZE 3
 
+#define MAX_NUMBER_OF_PARTICLES 10000//has to be max(PARTICLES_COUNT, SNOW_COUNT)
 #define PARTICLES_COUNT 1000
+#define SNOW_COUNT 10000
 
 
 // Globals
@@ -214,8 +217,10 @@ struct particle
 };
 
 struct particle particles_array[PARTICLES_COUNT];
-vec3 particle_position[PARTICLES_COUNT] = {};
-vec4 particle_color[PARTICLES_COUNT] = {};
+struct particle snow_array[SNOW_COUNT];
+vec3 particle_position[MAX_NUMBER_OF_PARTICLES] = {};
+vec4 particle_color[MAX_NUMBER_OF_PARTICLES] = {};
+int toggle_snow = 0;
 
 GLuint cubemap;
 
@@ -552,6 +557,17 @@ void init_billboarding(void){
 
 	printf("position :(%f, %f, %f)\n", particles_array[0].velocity.x, particles_array[0].velocity.y, particles_array[0].velocity.z);
 
+
+	for(i=0; i<SNOW_COUNT; i++){
+		snow_array[i].pos.x = rand() % 512;
+		snow_array[i].pos.y = 90;
+		snow_array[i].pos.z = rand() % 512;
+		snow_array[i].velocity.x = ((rand() % 100) - 50) /100.0;
+		snow_array[i].velocity.y = 1;
+		snow_array[i].velocity.z = ((rand() % 100) - 50) /100.0;
+		snow_array[i].color.w = (rand() % 100)/100.0; //fade
+	}
+
 	// Upload geometry to the GPU:
 
 	// Allocate and activate Vertex Array Object
@@ -602,8 +618,7 @@ void init_billboarding(void){
 
 
 }
-float particle_slope = 0;
-GLfloat particle_a=0.5;
+
 int dead_particles=0;
 vec3 explosion_pos;
 vec3 explosion_color;
@@ -694,6 +709,171 @@ void display_billboarding(void){
 	glBindTexture(GL_TEXTURE_2D, particle_tex);
 	// Draw the triangle particle_count times!
 	glDrawArraysInstanced(GL_TRIANGLES, 0, 3, PARTICLES_COUNT);
+
+
+	//put in displaz billboarding function
+	glDisable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
+}
+
+
+void display_explosion(void){
+
+	glUseProgram(particle_program);
+
+
+	//initialize each particle
+	int i;
+	for(i=0; i<PARTICLES_COUNT; i++){
+		if(dead_particles>=PARTICLES_COUNT-1){ //if particle is dead reinitialize
+			//particles_array[i].pos = (vec3){10,60,10};
+			particles_array[i].pos.x = explosion_pos.x;
+			particles_array[i].pos.y = explosion_pos.y;
+			particles_array[i].pos.z = explosion_pos.z;
+			particles_array[i].velocity.x = ((rand() % 100) - 50) /10.0;
+			particles_array[i].velocity.y = ((rand() % 100) - 50) /10.0;
+			particles_array[i].velocity.z = ((rand() % 100) - 50) /10.0;
+			//particles_array[i].color.w = (rand() % 100)/100.0; //fade
+			particles_array[i].color.w = 0.0; //fade
+			particles_array[i].color.x = explosion_color.x; //fade
+			particles_array[i].color.y = explosion_color.y; //fade
+			particles_array[i].color.z = explosion_color.z; //fade
+
+			//happens once per explosion
+			if(dead_particles >= PARTICLES_COUNT-1 && i == PARTICLES_COUNT-1){
+				dead_particles = 0;
+
+				explosion_pos.x = (rand() % 100) ;
+				explosion_pos.z = (rand() % 100);
+				explosion_pos.y = 60;
+
+				explosion_color.y = (rand() % 200 -100) /100.0;
+				explosion_color.z = (rand() % 200 -100) /100.0;
+				explosion_color.x = (rand() % 200 -100) /100.0;
+			}
+		}
+		else{
+			particles_array[i].pos.x += particles_array[i].velocity.x;
+			particles_array[i].pos.y += particles_array[i].velocity.y;
+			particles_array[i].pos.z += particles_array[i].velocity.z;
+			particles_array[i].velocity.x -= 0.2;
+			particles_array[i].velocity.y -= 0.2;
+			particles_array[i].velocity.z -= 0.2;
+			if(particles_array[i].color.w >= 1){
+				dead_particles++;
+			}
+			if(sqrt(particles_array[i].velocity.x*particles_array[i].velocity.x+particles_array[i].velocity.y*particles_array[i].velocity.y+particles_array[i].velocity.z*particles_array[i].velocity.z)<=0){
+				particles_array[i].color.w = 1;
+				dead_particles++;
+			}
+			particles_array[i].color.w += 0.05;
+		}
+	}
+
+
+	//write data into buffer
+	for(i=0; i<PARTICLES_COUNT; i++){
+		particle_position[i]=particles_array[i].pos;
+		particle_color[i].x = particles_array[i].color.x;
+		particle_color[i].y = 1;
+		particle_color[i].z = particles_array[i].color.z;
+		particle_color[i].w = particles_array[i].color.w;
+	}
+	//printf("position_triangle :(%f, %f, %f)\n", particles_array[0].pos.x, particles_array[0].pos.y, particles_array[0].pos.z);
+	//printf("position_gpu :(%f, %f, %f)\n", particle_position[0].x, particle_position[0].y, particle_position[0].z);
+	//printf("fade_gpu :()%f)\n", particle_color[0].x);
+
+
+	//sort array of struct for the blending to work correctly
+	qsort(particles_array, PARTICLES_COUNT, sizeof(struct particle), compare);
+
+	//put in display billboarding function
+	glDisable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// upload updated camera matrix.
+	glUniformMatrix4fv(glGetUniformLocation(particle_program, "camera"), 1, GL_TRUE, camera_placement.m);
+
+	//select buffers
+	glBindVertexArray(vertexArrayObjID);	// Select VAO
+	glBindBuffer(GL_ARRAY_BUFFER, position_buffer);
+	glBufferData(GL_ARRAY_BUFFER, PARTICLES_COUNT*sizeof(vec3), particle_position, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, att_buffer);
+	glBufferData(GL_ARRAY_BUFFER, PARTICLES_COUNT*sizeof(vec4), particle_color, GL_DYNAMIC_DRAW);
+	glBindTexture(GL_TEXTURE_2D, particle_tex);
+	// Draw the triangle particle_count times!
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 3, PARTICLES_COUNT);
+
+
+	//put in displaz billboarding function
+	glDisable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
+}
+
+void display_snow(void){
+
+	glUseProgram(particle_program);
+
+
+	//initialize each particle
+	int i;
+	for(i=0; i<SNOW_COUNT; i++){
+		if(snow_array[i].color.w >= 1){ //if particle is dead reinitialize
+			snow_array[i].pos.x = rand() % 255;
+			snow_array[i].pos.y = 40;
+			snow_array[i].pos.z = rand() % 255;
+			snow_array[i].velocity.x = ((rand() % 100) - 50) /100.0;
+			snow_array[i].velocity.y = 1;
+			snow_array[i].velocity.z = ((rand() % 100) - 50) /100.0;
+			snow_array[i].color.w = 0.0; //fade
+		}
+		else{
+			snow_array[i].pos.x += snow_array[i].velocity.x;
+			snow_array[i].pos.y -= snow_array[i].velocity.y;
+			snow_array[i].pos.z += snow_array[i].velocity.z;
+			//snow_array[i].velocity.x -= 0.2;
+			//snow_array[i].velocity.y = 1.25 * snow_array[i].velocity.y;
+			//snow_array[i].velocity.z -= 0.2;
+
+			snow_array[i].color.w += 0.005;
+		}
+	}
+
+
+	//write data into buffer
+	for(i=0; i<SNOW_COUNT; i++){
+		particle_position[i]= snow_array[i].pos;
+		particle_color[i].x = snow_array[i].color.x;
+		particle_color[i].y = snow_array[i].color.y;
+		particle_color[i].z = snow_array[i].color.z;
+		particle_color[i].w = snow_array[i].color.w;
+	}
+	//printf("position_triangle :(%f, %f, %f)\n", particles_array[0].pos.x, particles_array[0].pos.y, particles_array[0].pos.z);
+	//printf("position_gpu :(%f, %f, %f)\n", particle_position[0].x, particle_position[0].y, particle_position[0].z);
+	//printf("fade_gpu :()%f)\n", particle_color[0].x);
+
+
+	//sort array of struct for the blending to work correctly
+	qsort(snow_array, SNOW_COUNT, sizeof(struct particle), compare);
+
+	//put in display billboarding function
+	glDisable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// upload updated camera matrix.
+	glUniformMatrix4fv(glGetUniformLocation(particle_program, "camera"), 1, GL_TRUE, camera_placement.m);
+
+	//select buffers
+	glBindVertexArray(vertexArrayObjID);	// Select VAO
+	glBindBuffer(GL_ARRAY_BUFFER, position_buffer);
+	glBufferData(GL_ARRAY_BUFFER, SNOW_COUNT*sizeof(vec3), particle_position, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, att_buffer);
+	glBufferData(GL_ARRAY_BUFFER, SNOW_COUNT*sizeof(vec4), particle_color, GL_DYNAMIC_DRAW);
+	glBindTexture(GL_TEXTURE_2D, particle_tex);
+	// Draw the triangle particle_count times!
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 3, SNOW_COUNT);
 
 
 	//put in displaz billboarding function
@@ -1371,6 +1551,8 @@ void display(void)
 	glActiveTexture(GL_TEXTURE0); //just in case
 
 	glUseProgram(particle_program);
+	if(toggle_snow == 1)
+		display_snow();
 	if (check_win())
 		display_billboarding();
 	// display the background of the minimap
@@ -1677,6 +1859,11 @@ void OnTimer(int value)
 				time_air = 0;
 		}
 	}
+
+	if(glutKeyIsDown('o'))
+		toggle_snow = 1;
+	if(glutKeyIsDown('i'))
+		toggle_snow = 0;
 
 	if (glutKeyIsDown('q'))
 	{

@@ -9,8 +9,7 @@ in vec4 attributes;
 
 void main(void)
 {
-	//float speed = attributes.y;
-	//float color = attributes.x;
+
 	out_Color = texture(tex, texCoord) - attributes;
 	//out_Color = attributes;
 }
