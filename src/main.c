@@ -1491,7 +1491,6 @@ void OnTimer(int value)
 		checkpoints_display[checkpoint_id] = false;
 		if (check_win()) // GAME WON
 		{
-			// ACTIVATE FIREWORKS
 			noclip = true;
 		}
 	}
@@ -1523,21 +1522,11 @@ void OnTimer(int value)
 		}
 	}
 
-
-	if (corner)
-		player_speed = 0;
-	/*else
-		player_speed = PLAYER_SPEED;*/
-
-	if (corner)
-		printf("corner\n");
-	else
-		printf("\n");
-
 	if (check_in_lake())
 		player_speed = PLAYER_SPEED/2;
 	else
 		player_speed = PLAYER_SPEED;
+
 	if (glutKeyIsDown('e') && glutKeyIsDown('w')){ // Sprint (Shift)
 			if (SUPER_SPRINT)
 				player_speed *= SPRINT * 5;
@@ -1565,9 +1554,12 @@ void OnTimer(int value)
 			reverse.z *= -1;
 			reverse = Normalize(reverse);
 			printf("%f\n",dot(rotated_direction,reverse));
-			if (dot(rotated_direction,reverse) < -0.7) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
+			if (dot(rotated_direction,reverse) < -0.7) { // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 				corner = false;
+			}
 		}
+		if (corner)
+			player_speed = 0;
 		if (dot(rotated_direction,collision_vector) > 0) // IF NOT FACING THE WALL, PLAYER CAN GET AWAY
 		{
 			collision_factor = 1;
