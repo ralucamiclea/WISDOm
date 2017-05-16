@@ -760,8 +760,8 @@ void display_billboarding_dot(void){
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	mat4 trans;
-	float dot_position_x = ((position.x - 3)/255)*0.48;
-	float dot_position_y = ((position.z - 3)/255)*0.48;
+	float dot_position_x = ((position.z - 3)/255)*0.48;
+	float dot_position_y = ((position.x - 3)/255)*0.48;
 // The angle will be affected by the instance number so we pass the angle instead of  matrix.
 	trans = T(dot_position_x, dot_position_y, 0);
 	glUniformMatrix4fv(glGetUniformLocation(dot_program, "translation"), 1, GL_TRUE, trans.m);
@@ -819,7 +819,7 @@ void init_billboarding_minimap(void){
 	printError("init vertex arrays");
 
 
-	LoadTGATextureSimple("../tex/fft-terrain-minimap-65.tga", &minimap_tex);
+	LoadTGATextureSimple("../tex/fft-terrain-minimap-65-color.tga", &minimap_tex);
 	glBindTexture(GL_TEXTURE_2D, minimap_tex);
 	glUniform1i(glGetUniformLocation(minimap_program, "tex"), 0); // Texture unit 0
 
@@ -853,6 +853,7 @@ void display_billboarding_minimap(void){
 	glEnable(GL_DEPTH_TEST);
 }
 ///CHECKPOINT COUNT
+/*
 unsigned int vertexArrayObjID3;
 void init_billboarding_cp(void){
 
@@ -928,7 +929,7 @@ void display_billboarding_minimap(void){
 	glDisable(GL_BLEND);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
-}
+}*/
 void init(void)
 {
 	int i;
